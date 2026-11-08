@@ -1,0 +1,154 @@
+.recent-projects {
+  flex: 1;
+  padding-top: 24px;
+}
+
+.recent-projects-heading {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  padding: 0 2px 12px;
+  border-bottom: 1px dotted var(--line);
+}
+
+h2 {
+  margin: 0;
+  color: var(--bright);
+}
+
+.recent-project-count {
+  color: var(--muted);
+}
+
+.recent-project-list {
+  display: grid;
+}
+
+.recent-project-button {
+  display: flex;
+  align-items: center;
+  gap: 13px;
+  width: 100%;
+  min-width: 0;
+  padding: 13px 3px;
+  border: 0;
+  border-bottom: 1px dotted #334235;
+  background: transparent;
+  color: var(--green);
+  text-align: left;
+  cursor: pointer;
+}
+
+.recent-project-button:hover,
+.recent-project-button:focus-visible {
+  outline: none;
+  background: #182119;
+  color: var(--bright);
+}
+
+.project-folder-label {
+  flex: 0 0 auto;
+  color: #a3bb99;
+  font-size: 12px;
+}
+
+.recent-project-details {
+  display: grid;
+  min-width: 0;
+  flex: 1;
+  gap: 5px;
+}
+
+.recent-project-name,
+.recent-project-path {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.recent-project-name {
+  color: var(--bright);
+  font-size: 12px;
+  font-weight: bold;
+}
+
+.recent-project-path {
+  color: var(--muted);
+  font-size: 10px;
+  font-weight: normal;
+  letter-spacing: 0.02em;
+}
+
+.recent-project-action {
+  flex: 0 0 auto;
+  color: var(--muted);
+  font-size: 9px;
+}
+
+.recent-project-button:hover .recent-project-action {
+  color: var(--mint);
+}
+
+.recent-projects-empty {
+  display: flex;
+  align-items: center;
+  gap: 13px;
+  min-height: 64px;
+  margin-top: 10px;
+  padding: 10px 12px;
+  border: 1px dashed #344535;
+  border-radius: 5px;
+  color: var(--muted);
+  font-weight: normal;
+}
+
+.empty-folder-icon {
+  display: grid;
+  width: 35px;
+  height: 35px;
+  flex: 0 0 auto;
+  place-items: center;
+  border: 1px solid #344535;
+  border-radius: 5px;
+  color: #a3bb99;
+}
+
+.empty-folder-icon svg {
+  width: 20px;
+  height: 17px;
+}
+
+.empty-state-copy {
+  color: var(--muted);
+  font-size: 9px;
+  letter-spacing: 0.1em;
+}
+
+.launcher-footer {
+  display: flex;
+  justify-content: space-between;
+  gap: 15px;
+  margin-top: 14px;
+  padding-top: 12px;
+  border-top: 1px solid var(--line);
+  color: var(--muted);
+  font-size: 9px;
+  letter-spacing: 0.06em;
+}
+
+.prompt-cursor {
+  display: inline-block;
+  width: 7px;
+  height: 10px;
+  margin-left: 5px;
+  background: var(--mint);
+  vertical-align: -1px;
+  animation: blink 1s steps(2, start) infinite;
+}
+
+@keyframes blink {
+  to {
+    visibility: hidden;
+  }
+}
+

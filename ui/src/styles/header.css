@@ -1,0 +1,56 @@
+.launcher-header {
+  padding-bottom: 20px;
+  border-bottom: 1px solid var(--line);
+  text-align: center;
+}
+
+.brand-wordmark {
+  display: block;
+  width: min(100%, 340px);
+  height: auto;
+  margin-inline: auto;
+  overflow: visible;
+  animation: phosphor-flicker 4.2s steps(1, end) infinite;
+}
+
+.wordmark-dots {
+  fill: #fff;
+}
+
+@keyframes phosphor-flicker {
+  0%,
+  36%,
+  38%,
+  72%,
+  74%,
+  100% {
+    opacity: 1;
+  }
+
+  37% {
+    opacity: 0.82;
+  }
+
+  73% {
+    opacity: 0.9;
+  }
+}
+
+.launcher-subtitle,
+h1,
+h2,
+.recent-project-count,
+.choose-project-button,
+footer,
+.recent-projects-empty,
+.recent-project-path {
+  font-size: 11px;
+  font-weight: bold;
+  letter-spacing: 0.12em;
+}
+
+.launcher-subtitle {
+  margin-top: 10px;
+  color: var(--muted);
+}
+
