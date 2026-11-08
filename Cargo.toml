@@ -1,0 +1,15 @@
+[package]
+name = "aidawarp"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+tauri = { version = "2" }
+tauri-plugin-dialog = "2"
+
+[build-dependencies]
+tauri-build = { version = "2" }
+
+[workspace]
+members = ["aida-ast", "aida-runtime"]
+resolver = "3"

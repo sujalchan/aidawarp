@@ -1,0 +1,47 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="theme-color" content="#101510" />
+  <title>AIDAWARP LAUNCHER</title>
+  <link rel="stylesheet" href="./style.css" />
+</head>
+
+<body>
+  <main class="launcher-frame">
+    <header class="launcher-header">
+      <svg class="brand-wordmark" viewBox="0 0 376 56" role="img" aria-label="AidaWarp">
+        <g id="wordmark-dots" aria-hidden="true"></g>
+      </svg>
+      <div class="launcher-subtitle">SCRATCH TO RUST CONVERTER</div>
+    </header>
+
+    <section class="project-picker" aria-labelledby="open-title">
+      <h1 id="open-title">OPEN A PROJECT</h1>
+      <p class="directory-instruction">SELECT A DIRECTORY TO CONTINUE <i class="prompt-cursor" aria-hidden="true"></i></p>
+      <button id="choose-directory" class="choose-project-button" type="button">
+        <span class="button-symbol" aria-hidden="true">[ + ]</span>
+        CHOOSE PROJECT DIRECTORY
+      </button>
+      <p id="message" class="project-selection-status" role="status" aria-live="polite"></p>
+    </section>
+
+    <section class="recent-projects" aria-labelledby="recent-title">
+      <div class="recent-projects-heading">
+        <h2 id="recent-title">RECENT PROJECTS</h2>
+        <span id="recent-count" class="recent-project-count">00</span>
+      </div>
+      <div id="recent-list" class="recent-project-list"></div>
+      <p id="empty-state" class="recent-projects-empty">NO PROJECTS IN MEMORY</p>
+    </section>
+
+    <footer>
+      <span>STATIC TALENT GROUP</span>
+    </footer>
+  </main>
+  <script type="module" src="./main.js"></script>
+</body>
+
+</html>
