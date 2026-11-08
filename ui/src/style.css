@@ -56,8 +56,9 @@ body {
   animation: phosphor-flicker 4.2s steps(1, end) infinite;
 }
 
-#wordmark-dots {
-  fill: #d9edcf;
+#wordmark-dots,
+.wordmark-dots {
+  fill: #fff;
 }
 
 @keyframes phosphor-flicker {
