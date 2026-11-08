@@ -26,6 +26,7 @@
     "active": true,
     "category": "DeveloperTool",
     "icon": [
+      "icons/icon.ico",
       "icons/icon.png"
     ],
     "shortDescription": "AIDAWARP Scratch converter"
