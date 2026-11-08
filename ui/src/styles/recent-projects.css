@@ -16,10 +16,6 @@ h2 {
   color: var(--bright);
 }
 
-.recent-project-count {
-  color: var(--muted);
-}
-
 .recent-project-list {
   display: grid;
 }
@@ -44,12 +40,6 @@ h2 {
   outline: none;
   background: #182119;
   color: var(--bright);
-}
-
-.project-folder-label {
-  flex: 0 0 auto;
-  color: #a3bb99;
-  font-size: 12px;
 }
 
 .recent-project-details {

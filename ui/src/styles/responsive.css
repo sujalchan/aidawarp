@@ -1,15 +1,10 @@
 @media (max-width: 660px) {
   .launcher-frame {
-    padding: 22px 22px 16px;
+    padding: 40px 22px 16px;
   }
 
   .project-picker {
-    grid-template-columns: minmax(0, 1fr);
     padding: 20px;
-  }
-
-  .picker-art {
-    display: none;
   }
 }
 

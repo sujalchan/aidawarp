@@ -3,12 +3,13 @@ import AmbientCode from "./components/AmbientCode.jsx";
 import ProjectPicker from "./components/ProjectPicker.jsx";
 import RecentProjects from "./components/RecentProjects.jsx";
 import Wordmark from "./components/Wordmark.jsx";
+import WindowControls from "./components/WindowControls.jsx";
 import { readRecentProjects, saveRecentProjects } from "./utils/projectStorage.js";
 
 export default function App() {
   const [recentProjects, setRecentProjects] = useState(readRecentProjects);
   const [statusMessage, setStatusMessage] = useState("");
-  const [isChoosingDirectory, setIsChoosingDirectory] = useState(false);
+  const [isChoosingProject, setIsChoosingProject] = useState(false);
 
   function openProject(path) {
     const updatedProjects = [
@@ -21,26 +22,27 @@ export default function App() {
     setStatusMessage(`PROJECT SELECTED: ${path}`);
   }
 
-  async function chooseDirectory() {
-    setIsChoosingDirectory(true);
-    setStatusMessage("SELECT A PROJECT DIRECTORY…");
+  async function chooseProject() {
+    setIsChoosingProject(true);
+    setStatusMessage("SELECT A PROJECT…");
 
     try {
-      const directory = await window.__TAURI__.dialog.open({
-        directory: true,
+      const project = await window.__TAURI__.dialog.open({
+        directory: false,
         multiple: false,
-        title: "Open Scratch Project Directory",
+        filters: [{ name: "Scratch Project", extensions: ["sb3"] }],
+        title: "Open Scratch Project",
       });
 
-      if (typeof directory === "string") {
-        openProject(directory);
+      if (typeof project === "string") {
+        openProject(project);
       } else {
         setStatusMessage("SELECTION CANCELLED");
       }
     } catch (error) {
-      setStatusMessage(`COULD NOT OPEN DIRECTORY: ${String(error)}`);
+      setStatusMessage(`COULD NOT OPEN PROJECT: ${String(error)}`);
     } finally {
-      setIsChoosingDirectory(false);
+      setIsChoosingProject(false);
     }
   }
 
@@ -48,6 +50,9 @@ export default function App() {
     <>
       <AmbientCode />
       <main className="launcher-frame">
+        <div className="window-titlebar" data-tauri-drag-region>
+          <WindowControls />
+        </div>
         <header className="launcher-header">
           <div className="brand-lockup">
             <Wordmark />
@@ -56,8 +61,8 @@ export default function App() {
         </header>
 
         <ProjectPicker
-          chooseDirectory={chooseDirectory}
-          isChoosingDirectory={isChoosingDirectory}
+          chooseProject={chooseProject}
+          isChoosingProject={isChoosingProject}
           statusMessage={statusMessage}
         />
         <RecentProjects projects={recentProjects} onOpen={openProject} />

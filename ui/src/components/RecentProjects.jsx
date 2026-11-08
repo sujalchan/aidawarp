@@ -9,9 +9,6 @@ function RecentProject({ path, onOpen }) {
       title={`Open ${path}`}
       onClick={() => onOpen(path)}
     >
-      <span className="project-folder-label" aria-hidden="true">
-        [DIR]
-      </span>
       <span className="recent-project-details">
         <span className="recent-project-name">{projectName(path)}</span>
         <span className="recent-project-path">{path}</span>
@@ -28,9 +25,6 @@ export default function RecentProjects({ projects, onOpen }) {
     <section className="recent-projects" aria-labelledby="recent-title">
       <div className="recent-projects-heading">
         <h2 id="recent-title">RECENT PROJECTS</h2>
-        <span className="recent-project-count">
-          {String(projects.length).padStart(2, "0")}
-        </span>
       </div>
       <div className="recent-project-list">
         {projects.map((path) => (

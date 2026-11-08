@@ -1,3 +1,66 @@
+.window-titlebar {
+  position: fixed;
+  z-index: 5;
+  inset: 0 0 auto;
+  display: flex;
+  height: 30px;
+  align-items: center;
+  justify-content: flex-end;
+  padding-inline: 12px;
+  -webkit-app-region: drag;
+}
+
+.window-controls {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  -webkit-app-region: no-drag;
+}
+
+.window-control {
+  display: block;
+  width: 13px;
+  height: 13px;
+  padding: 0;
+  border: 1px solid rgba(0, 0, 0, 0.24);
+  border-radius: 50%;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.28);
+  cursor: pointer;
+  transition: box-shadow 140ms ease, filter 140ms ease;
+}
+
+.window-control-close {
+  background: #ff5f57;
+}
+
+.window-control-minimize {
+  background: #febc2e;
+}
+
+.window-control-maximize {
+  background: #28c840;
+}
+
+.window-control-close:hover {
+  box-shadow: 0 0 8px rgba(255, 95, 87, 0.7), inset 0 1px 0 rgba(255, 255, 255, 0.35);
+  filter: brightness(1.12);
+}
+
+.window-control-minimize:hover {
+  box-shadow: 0 0 8px rgba(254, 188, 46, 0.7), inset 0 1px 0 rgba(255, 255, 255, 0.35);
+  filter: brightness(1.12);
+}
+
+.window-control-maximize:hover {
+  box-shadow: 0 0 8px rgba(40, 200, 64, 0.7), inset 0 1px 0 rgba(255, 255, 255, 0.35);
+  filter: brightness(1.12);
+}
+
+.window-control:focus-visible {
+  outline: 2px solid var(--bright);
+  outline-offset: 2px;
+}
+
 .launcher-header {
   padding-bottom: 20px;
   border-bottom: 1px solid var(--line);
@@ -10,29 +73,24 @@
   height: auto;
   margin-inline: auto;
   overflow: visible;
-  animation: phosphor-flicker 4.2s steps(1, end) infinite;
 }
 
 .wordmark-dots {
-  fill: #fff;
+  fill: #f3ffe9;
+  filter: drop-shadow(0 0 2px rgba(221, 255, 203, 0.8))
+    drop-shadow(0 0 8px rgba(152, 211, 127, 0.48));
+  animation: wordmark-glow 2.8s ease-in-out infinite alternate;
 }
 
-@keyframes phosphor-flicker {
-  0%,
-  36%,
-  38%,
-  72%,
-  74%,
-  100% {
-    opacity: 1;
+@keyframes wordmark-glow {
+  from {
+    filter: drop-shadow(0 0 2px rgba(221, 255, 203, 0.7))
+      drop-shadow(0 0 6px rgba(152, 211, 127, 0.35));
   }
 
-  37% {
-    opacity: 0.82;
-  }
-
-  73% {
-    opacity: 0.9;
+  to {
+    filter: drop-shadow(0 0 3px rgba(221, 255, 203, 0.95))
+      drop-shadow(0 0 14px rgba(152, 211, 127, 0.68));
   }
 }
 

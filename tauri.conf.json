@@ -11,11 +11,12 @@
     "windows": [
       {
         "title": "AIDAWARP LAUNCHER",
-        "width": 760,
-        "height": 560,
+        "width": 1280,
+        "height": 720,
         "minWidth": 600,
         "minHeight": 460,
-        "resizable": true
+        "resizable": false,
+        "decorations": false
       }
     ],
     "security": {
