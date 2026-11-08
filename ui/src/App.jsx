@@ -10,6 +10,7 @@ export default function App() {
   const [recentProjects, setRecentProjects] = useState(readRecentProjects);
   const [statusMessage, setStatusMessage] = useState("");
   const [isChoosingProject, setIsChoosingProject] = useState(false);
+  const [backgroundEffectsEnabled, setBackgroundEffectsEnabled] = useState(true);
 
   function openProject(path) {
     const updatedProjects = [
@@ -48,7 +49,7 @@ export default function App() {
 
   return (
     <>
-      <AmbientCode />
+      {backgroundEffectsEnabled && <AmbientCode />}
       <main className="launcher-frame">
         <div className="window-titlebar" data-tauri-drag-region>
           <WindowControls />
@@ -69,6 +70,19 @@ export default function App() {
 
         <footer className="launcher-footer">
           <span>STATIC TALENT GROUP</span>
+          <div className="background-effects-control">
+            <span>BACKGROUND EFFECTS</span>
+            <button
+              className="background-effects-toggle"
+              type="button"
+              role="switch"
+              aria-label="Background effects"
+              aria-checked={backgroundEffectsEnabled}
+              onClick={() => setBackgroundEffectsEnabled((enabled) => !enabled)}
+            >
+              <span className="background-effects-toggle-thumb" />
+            </button>
+          </div>
         </footer>
       </main>
     </>

@@ -118,13 +118,15 @@ export default function AmbientCode() {
       const blockHeight = lines.length * lineHeight;
       const maxX = Math.max(12, width - blockWidth - 12);
       const maxY = Math.max(12, height - blockHeight - 12);
+      const depth = Math.random();
+      const depthMotion = 0.12 + depth * 1.5;
       const phaseX = Math.random() * Math.PI * 2;
       const phaseY = Math.random() * Math.PI * 2;
-      const amplitudeX = 8 + Math.random() * 20;
-      const amplitudeY = 6 + Math.random() * 17;
+      const amplitudeX = (8 + Math.random() * 20) * depthMotion;
+      const amplitudeY = (6 + Math.random() * 17) * depthMotion;
       const frequencyX = 0.00035 + Math.random() * 0.0005;
       const frequencyY = 0.0003 + Math.random() * 0.00045;
-      const pointerWeight = 0.7 + Math.random() * 0.55;
+      const pointerWeight = 0.12 + depth * 1.85;
       let x = 12;
       let y = 12;
       let bestClearance = Number.NEGATIVE_INFINITY;
@@ -209,9 +211,10 @@ export default function AmbientCode() {
         amplitudeY,
         frequencyX,
         frequencyY,
+        depth,
         pointerWeight,
         hovered: false,
-        alpha: 0.1 + Math.random() * 0.1,
+        alpha: 0.035 + depth * 0.17,
       };
     }
 
@@ -285,8 +288,8 @@ export default function AmbientCode() {
       if (!prefersReducedMotion) {
         pointerVelocityX += (-pointerSwayX * 12 - pointerVelocityX * 5) * delta;
         pointerVelocityY += (-pointerSwayY * 12 - pointerVelocityY * 5) * delta;
-        pointerSwayX = clamp(pointerSwayX + pointerVelocityX * delta, -54, 54);
-        pointerSwayY = clamp(pointerSwayY + pointerVelocityY * delta, -40, 40);
+        pointerSwayX = clamp(pointerSwayX + pointerVelocityX * delta, -70, 70);
+        pointerSwayY = clamp(pointerSwayY + pointerVelocityY * delta, -55, 55);
       }
 
       for (let fragmentIndex = 0; fragmentIndex < fragments.length; fragmentIndex += 1) {
@@ -319,6 +322,19 @@ export default function AmbientCode() {
           if (ripples.length > 4) ripples.shift();
         }
         fragment.hovered = isHovered;
+        const nearestPointerX = pointerPosition
+          ? clamp(pointerPosition.x, x, x + fragment.blockWidth)
+          : 0;
+        const nearestPointerY = pointerPosition
+          ? clamp(pointerPosition.y, y, y + fragment.blockHeight)
+          : 0;
+        const pointerDistance = pointerPosition
+          ? Math.hypot(
+              pointerPosition.x - nearestPointerX,
+              pointerPosition.y - nearestPointerY,
+            )
+          : Number.POSITIVE_INFINITY;
+        const mouseLight = Math.pow(clamp(1 - pointerDistance / 240, 0, 1), 2);
         const fadeIn = Math.min(1, fragment.age / fragment.fadeInDuration);
         const fadeOut = Math.min(
           1,
@@ -328,9 +344,9 @@ export default function AmbientCode() {
         const shimmer = 0.85 + Math.sin(time * 0.001 + fragment.phaseX) * 0.15;
 
         context.save();
-        context.globalAlpha = fragment.alpha * fadeIn * fadeOut * shimmer;
+        context.globalAlpha = fragment.alpha * fadeIn * fadeOut * shimmer * (1 + mouseLight * 0.8);
         context.font = String(fragment.size) + 'px Consolas, "Courier New", monospace';
-        context.shadowBlur = 2;
+        context.shadowBlur = 2 + mouseLight * 14;
 
         fragment.lines.forEach((line, lineIndex) => {
           const lineStagger = 0.025;
@@ -456,6 +472,7 @@ export default function AmbientCode() {
   return (
     <div className="ambient-background" aria-hidden="true">
       <canvas ref={canvasRef} className="ambient-code" />
+      <div className="edge-blur" />
       <div className="crt-overlay" />
     </div>
   );

@@ -116,6 +116,7 @@ h2 {
 
 .launcher-footer {
   display: flex;
+  align-items: center;
   justify-content: space-between;
   gap: 15px;
   margin-top: 14px;
@@ -124,6 +125,50 @@ h2 {
   color: var(--muted);
   font-size: 9px;
   letter-spacing: 0.06em;
+}
+
+.background-effects-control {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.background-effects-toggle {
+  display: flex;
+  width: 34px;
+  height: 18px;
+  flex: 0 0 auto;
+  align-items: center;
+  padding: 2px;
+  border: 1px solid #586b53;
+  border-radius: 10px;
+  background: #202a21;
+  cursor: pointer;
+  transition: background-color 160ms ease, border-color 160ms ease;
+}
+
+.background-effects-toggle[aria-checked="true"] {
+  justify-content: flex-end;
+  border-color: #9fbd87;
+  background: #40563d;
+}
+
+.background-effects-toggle-thumb {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: #92a18b;
+  transition: background-color 160ms ease;
+}
+
+.background-effects-toggle[aria-checked="true"] .background-effects-toggle-thumb {
+  background: #d4edbe;
+  box-shadow: 0 0 6px rgba(185, 212, 159, 0.6);
+}
+
+.background-effects-toggle:focus-visible {
+  outline: 2px solid var(--bright);
+  outline-offset: 3px;
 }
 
 .prompt-cursor {
