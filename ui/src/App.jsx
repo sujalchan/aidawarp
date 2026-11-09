@@ -23,6 +23,12 @@ export default function App() {
     setStatusMessage(`PROJECT SELECTED: ${path}`);
   }
 
+  function removeRecentProject(path) {
+    const updatedProjects = recentProjects.filter((projectPath) => projectPath !== path);
+    saveRecentProjects(updatedProjects);
+    setRecentProjects(updatedProjects);
+  }
+
   async function chooseProject() {
     setIsChoosingProject(true);
     setStatusMessage("SELECT A PROJECT…");
@@ -66,7 +72,11 @@ export default function App() {
           isChoosingProject={isChoosingProject}
           statusMessage={statusMessage}
         />
-        <RecentProjects projects={recentProjects} onOpen={openProject} />
+        <RecentProjects
+          projects={recentProjects}
+          onOpen={openProject}
+          onRemove={removeRecentProject}
+        />
 
         <footer className="launcher-footer">
           <span>STATIC TALENT GROUP</span>

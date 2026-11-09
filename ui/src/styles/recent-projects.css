@@ -20,15 +20,22 @@ h2 {
   display: grid;
 }
 
+.recent-project-row {
+  display: flex;
+  min-width: 0;
+  align-items: stretch;
+  border-bottom: 1px dotted #334235;
+}
+
 .recent-project-button {
   display: flex;
   align-items: center;
   gap: 13px;
-  width: 100%;
+  width: auto;
   min-width: 0;
+  flex: 1;
   padding: 13px 3px;
   border: 0;
-  border-bottom: 1px dotted #334235;
   background: transparent;
   color: var(--green);
   text-align: left;
@@ -40,6 +47,28 @@ h2 {
   outline: none;
   background: #182119;
   color: var(--bright);
+}
+
+.remove-recent-project {
+  display: grid;
+  width: 30px;
+  flex: 0 0 auto;
+  place-items: center;
+  border: 0;
+  background: transparent;
+  color: var(--muted);
+  cursor: pointer;
+  font-size: 17px;
+  opacity: 0.65;
+  transition: color 120ms ease, opacity 120ms ease, text-shadow 120ms ease;
+}
+
+.remove-recent-project:hover,
+.remove-recent-project:focus-visible {
+  outline: none;
+  color: #ff827a;
+  opacity: 1;
+  text-shadow: 0 0 8px rgba(255, 95, 87, 0.65);
 }
 
 .recent-project-details {

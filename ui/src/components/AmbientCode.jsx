@@ -97,6 +97,21 @@ export default function AmbientCode() {
       return characterColors;
     }
 
+    function getSyntaxRuns(line) {
+      const characterColors = getSyntaxColors(line);
+      const runs = [];
+      let start = 0;
+
+      for (let index = 1; index <= characterColors.length; index += 1) {
+        if (index === characterColors.length || characterColors[index] !== characterColors[start]) {
+          runs.push({ start, end: index, color: characterColors[start] });
+          start = index;
+        }
+      }
+
+      return runs;
+    }
+
     function createFragment(exclude = null) {
       releaseSnippet(exclude);
       let availableSnippet = null;
@@ -190,7 +205,7 @@ export default function AmbientCode() {
       return {
         lines,
         snippetKey,
-        characterColors: lines.map(getSyntaxColors),
+        syntaxRuns: lines.map(getSyntaxRuns),
         x,
         y,
         blockWidth,
@@ -268,7 +283,7 @@ export default function AmbientCode() {
 
       if (prefersReducedMotion) {
         draw(0);
-      } else {
+      } else if (!document.hidden) {
         cancelAnimationFrame(animationFrame);
         animationFrame = requestAnimationFrame(animate);
       }
@@ -280,10 +295,23 @@ export default function AmbientCode() {
       context.clearRect(0, 0, width, height);
       const rippleSpeed = 420;
       const rippleDuration = 0.45;
-      ripples = ripples.filter((ripple) => {
+      for (let rippleIndex = ripples.length - 1; rippleIndex >= 0; rippleIndex -= 1) {
+        const ripple = ripples[rippleIndex];
         ripple.age += delta;
-        return ripple.age <= ripple.maxDistance / rippleSpeed + rippleDuration;
+        if (ripple.age > ripple.maxDistance / rippleSpeed + rippleDuration) {
+          ripples.splice(rippleIndex, 1);
+        }
+      }
+      const rippleWaves = ripples.map((ripple) => {
+        const outerRadius = ripple.age * rippleSpeed;
+        const innerRadius = Math.max(0, (ripple.age - rippleDuration) * rippleSpeed);
+        return {
+          ...ripple,
+          outerRadiusSquared: outerRadius * outerRadius,
+          innerRadiusSquared: innerRadius * innerRadius,
+        };
       });
+      const tick = Math.floor(time / 55);
 
       if (!prefersReducedMotion) {
         pointerVelocityX += (-pointerSwayX * 12 - pointerVelocityX * 5) * delta;
@@ -356,9 +384,10 @@ export default function AmbientCode() {
             0,
             1,
           );
-          const resolved = Math.floor(line.length * lineProgress);
+          const resolved = progress >= 1
+            ? line.length
+            : Math.floor(line.length * lineProgress);
           let displayLine = "";
-          const tick = Math.floor(time / 55);
 
           for (let charIndex = 0; charIndex < line.length; charIndex += 1) {
             const character = line[charIndex];
@@ -366,14 +395,16 @@ export default function AmbientCode() {
             const characterY = y + (lineIndex + 0.5) * fragment.lineHeight;
             let rippleStrength = 0;
             let rippleSeed = 0;
-            for (let rippleIndex = ripples.length - 1; rippleIndex >= 0; rippleIndex -= 1) {
-              const ripple = ripples[rippleIndex];
-              const distanceFromHit = Math.hypot(
-                characterX - ripple.x,
-                characterY - ripple.y,
-              );
-              const rippleTime = ripple.age - distanceFromHit / rippleSpeed;
-              if (rippleTime >= 0 && rippleTime <= rippleDuration) {
+            for (let rippleIndex = rippleWaves.length - 1; rippleIndex >= 0; rippleIndex -= 1) {
+              const ripple = rippleWaves[rippleIndex];
+              const deltaX = characterX - ripple.x;
+              const deltaY = characterY - ripple.y;
+              const distanceSquared = deltaX * deltaX + deltaY * deltaY;
+              if (
+                distanceSquared <= ripple.outerRadiusSquared &&
+                distanceSquared >= ripple.innerRadiusSquared
+              ) {
+                const distanceFromHit = Math.sqrt(distanceSquared);
                 const strength = Math.pow(
                   Math.max(0, 1 - distanceFromHit / ripple.maxDistance),
                   3,
@@ -384,13 +415,19 @@ export default function AmbientCode() {
                 }
               }
             }
-            const scrambleNoise =
-              Math.abs(
-                Math.sin(rippleSeed + lineIndex * 91 + charIndex * 17) * 43758.5453,
-              ) % 1;
-            const rippleScramble = rippleStrength > scrambleNoise;
+            let rippleScramble = false;
+            if (rippleStrength > 0) {
+              const scrambleNoise =
+                Math.abs(
+                  Math.sin(rippleSeed + lineIndex * 91 + charIndex * 17) * 43758.5453,
+                ) % 1;
+              rippleScramble = rippleStrength > scrambleNoise;
+            }
 
-            if (/\s/.test(character) || (charIndex < resolved && !rippleScramble)) {
+            if (
+              (character === " " || character === "\t") ||
+              (charIndex < resolved && !rippleScramble)
+            ) {
               displayLine += character;
             } else {
               const value = Math.sin(
@@ -404,24 +441,17 @@ export default function AmbientCode() {
             }
           }
 
-          const characterColors = fragment.characterColors[lineIndex];
           const baseline = y + (lineIndex + 1) * fragment.lineHeight;
-          let runStart = 0;
-
-          while (runStart < displayLine.length) {
-            const color = characterColors[runStart];
-            let runEnd = runStart + 1;
-            while (runEnd < displayLine.length && characterColors[runEnd] === color) {
-              runEnd += 1;
-            }
+          const syntaxRuns = fragment.syntaxRuns[lineIndex];
+          for (let runIndex = 0; runIndex < syntaxRuns.length; runIndex += 1) {
+            const { start, end, color } = syntaxRuns[runIndex];
             context.fillStyle = color;
             context.shadowColor = color;
             context.fillText(
-              displayLine.slice(runStart, runEnd),
-              x + runStart * fragment.characterWidth,
+              displayLine.slice(start, end),
+              x + start * fragment.characterWidth,
               baseline,
             );
-            runStart = runEnd;
           }
         });
         context.restore();
@@ -429,11 +459,26 @@ export default function AmbientCode() {
     }
 
     function animate(time) {
+      if (document.hidden) {
+        animationFrame = 0;
+        return;
+      }
       if (!lastDraw || time - lastDraw >= 1000 / 30) {
         draw(time);
         lastDraw = time;
       }
       animationFrame = requestAnimationFrame(animate);
+    }
+
+    function handleVisibilityChange() {
+      if (document.hidden) {
+        cancelAnimationFrame(animationFrame);
+        animationFrame = 0;
+      } else if (!prefersReducedMotion && !animationFrame) {
+        lastTime = 0;
+        lastDraw = 0;
+        animationFrame = requestAnimationFrame(animate);
+      }
     }
 
     function handlePointerMove(event) {
@@ -458,11 +503,13 @@ export default function AmbientCode() {
     }
 
     resize();
+    document.addEventListener("visibilitychange", handleVisibilityChange);
     window.addEventListener("resize", resize);
     window.addEventListener("pointermove", handlePointerMove, { passive: true });
     window.addEventListener("pointerleave", handlePointerLeave);
     return () => {
       window.removeEventListener("resize", resize);
+      document.removeEventListener("visibilitychange", handleVisibilityChange);
       window.removeEventListener("pointermove", handlePointerMove);
       window.removeEventListener("pointerleave", handlePointerLeave);
       cancelAnimationFrame(animationFrame);
@@ -472,7 +519,8 @@ export default function AmbientCode() {
   return (
     <div className="ambient-background" aria-hidden="true">
       <canvas ref={canvasRef} className="ambient-code" />
-      <div className="edge-blur" />
+      <div className="edge-blur edge-blur-top" />
+      <div className="edge-blur edge-blur-bottom" />
       <div className="crt-overlay" />
     </div>
   );
