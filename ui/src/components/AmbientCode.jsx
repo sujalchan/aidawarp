@@ -15,17 +15,17 @@ export default function AmbientCode() {
     );
     const scrambleGlyphs = "01abcdefXYZ<>/\\{}[]!@#$%^&*+-=:?;_";
     const syntaxColors = {
-      plain: "#c3d5bd",
-      keyword: "#e6a77b",
-      function: "#e5cf9a",
-      type: "#9bd8d0",
-      string: "#a8c7a0",
-      number: "#a8c7ff",
-      comment: "#81917d",
-      macro: "#c7a9f4",
-      lifetime: "#c7a9f4",
-      attribute: "#d6b889",
-      literal: "#d7a0c7",
+      plain: "#d2d7df",
+      keyword: "#ff7043",
+      function: "#ffd166",
+      type: "#4cc9f0",
+      string: "#ff5d8f",
+      number: "#a78bfa",
+      comment: "#8293a6",
+      macro: "#f15bb5",
+      lifetime: "#c77dff",
+      attribute: "#ff9f1c",
+      literal: "#f94144",
     };
     const rustKeywords = new Set(
       "as async await break const continue crate dyn else enum extern fn for if impl in let loop match mod move mut pub ref return self static struct super trait type unsafe use where while".split(" "),
@@ -125,9 +125,9 @@ export default function AmbientCode() {
       availableSnippet ??= uniqueSnippets.find(([key]) => !activeSnippets.has(key));
       const [snippetKey, lines] = availableSnippet;
       activeSnippets.set(snippetKey, (activeSnippets.get(snippetKey) ?? 0) + 1);
-      const size = Math.min(10, Math.max(7.5, width / 78));
+      const size = Math.min(12, Math.max(9, width / 92));
       const lineHeight = size * 1.42;
-      context.font = String(size) + 'px Consolas, "Courier New", monospace';
+      context.font = '500 ' + String(size) + 'px Consolas, "Courier New", monospace';
       const characterWidth = context.measureText("M").width;
       const blockWidth = Math.max(...lines.map((line) => context.measureText(line).width));
       const blockHeight = lines.length * lineHeight;
@@ -373,7 +373,7 @@ export default function AmbientCode() {
 
         context.save();
         context.globalAlpha = fragment.alpha * fadeIn * fadeOut * shimmer * (1 + mouseLight * 0.8);
-        context.font = String(fragment.size) + 'px Consolas, "Courier New", monospace';
+        context.font = '500 ' + String(fragment.size) + 'px Consolas, "Courier New", monospace';
         context.shadowBlur = 2 + mouseLight * 14;
 
         fragment.lines.forEach((line, lineIndex) => {

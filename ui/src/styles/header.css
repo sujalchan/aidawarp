@@ -22,7 +22,7 @@
   width: 13px;
   height: 13px;
   padding: 0;
-  border: 1px solid rgba(0, 0, 0, 0.24);
+  border: 2px solid rgba(0, 0, 0, 0.24);
   border-radius: 50%;
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.28);
   cursor: pointer;
@@ -63,7 +63,7 @@
 
 .launcher-header {
   padding-bottom: 20px;
-  border-bottom: 1px solid var(--line);
+  border-bottom: 2px solid var(--line);
   text-align: center;
 }
 
@@ -76,39 +76,23 @@
 }
 
 .wordmark-dots {
-  fill: #f3ffe9;
-  filter: drop-shadow(0 0 2px rgba(221, 255, 203, 0.8))
-    drop-shadow(0 0 8px rgba(152, 211, 127, 0.48));
-  animation: wordmark-glow 2.8s ease-in-out infinite alternate;
-}
-
-@keyframes wordmark-glow {
-  from {
-    filter: drop-shadow(0 0 2px rgba(221, 255, 203, 0.7))
-      drop-shadow(0 0 6px rgba(152, 211, 127, 0.35));
-  }
-
-  to {
-    filter: drop-shadow(0 0 3px rgba(221, 255, 203, 0.95))
-      drop-shadow(0 0 14px rgba(152, 211, 127, 0.68));
-  }
+  fill: #f5f5f5;
 }
 
 .launcher-subtitle,
-h1,
-h2,
 .recent-project-count,
 .choose-project-button,
 footer,
 .recent-projects-empty,
 .recent-project-path {
-  font-size: 11px;
-  font-weight: bold;
-  letter-spacing: 0.12em;
+  font-size: 14px;
+  font-weight: 600;
+  letter-spacing: 0.03em;
 }
 
 .launcher-subtitle {
   margin-top: 10px;
   color: var(--muted);
+  line-height: 1.5;
 }
 

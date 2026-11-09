@@ -1,18 +1,28 @@
 :root {
   color-scheme: dark;
-  font-family: "Courier New", Courier, monospace;
-  background: #101510;
-  color: #c3d5bd;
+  font-family: Manrope, "Segoe UI", Arial, sans-serif;
+  font-size: 14px;
+  font-weight: 500;
+  background: #080808;
+  color: #c8c8c8;
   font-synthesis: none;
   text-rendering: optimizeLegibility;
 
-  --screen: #101510;
-  --panel: #141c15;
-  --line: #435744;
-  --muted: #81917d;
-  --green: #c3d5bd;
-  --bright: #e5f4d6;
-  --mint: #b9d49f;
+  --screen: #080808;
+  --panel: #111111;
+  --line: #333333;
+  --muted: #858585;
+  --green: #c8c8c8;
+  --bright: #f0f0f0;
+  --mint: #bdbdbd;
+}
+
+@font-face {
+  font-family: Manrope;
+  font-style: normal;
+  font-weight: 400 800;
+  font-display: swap;
+  src: url("../assets/fonts/Manrope-latin.woff2") format("woff2");
 }
 
 * {
@@ -58,23 +68,16 @@ body {
   height: 100%;
   opacity: 0.78;
   filter:
-    drop-shadow(0 0 2px rgba(197, 230, 169, 0.32))
-    drop-shadow(0 0 8px rgba(140, 192, 130, 0.16));
+    drop-shadow(0 0 2px rgba(230, 230, 230, 0.28))
+    drop-shadow(0 0 8px rgba(190, 190, 190, 0.14));
 }
 
 .crt-overlay {
   position: absolute;
   z-index: 2;
   inset: 0;
-  background:
-    repeating-linear-gradient(
-      to bottom,
-      rgba(228, 255, 217, 0.035) 0,
-      rgba(228, 255, 217, 0.035) 1px,
-      transparent 1px,
-      transparent 5px
-    ),
-    radial-gradient(ellipse at center, transparent 42%, rgba(3, 7, 4, 0.36) 100%);
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='1' height='8'%3E%3Crect width='1' height='1' fill='%23ffffff' fill-opacity='.035'/%3E%3C/svg%3E");
+  background-repeat: repeat;
   opacity: 0.68;
 }
 

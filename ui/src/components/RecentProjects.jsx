@@ -1,7 +1,7 @@
 import FolderIcon from "./FolderIcon.jsx";
 import { projectName } from "../utils/projectStorage.js";
 
-function RecentProject({ path, onOpen, onRemove }) {
+function RecentProject({ path, name, onOpen, onRemove }) {
   return (
     <div className="recent-project-row">
       <button
@@ -11,7 +11,7 @@ function RecentProject({ path, onOpen, onRemove }) {
         onClick={() => onOpen(path)}
       >
         <span className="recent-project-details">
-          <span className="recent-project-name">{projectName(path)}</span>
+          <span className="recent-project-name">{name || projectName(path)}</span>
           <span className="recent-project-path">{path}</span>
         </span>
         <span className="recent-project-action" aria-hidden="true">
@@ -30,7 +30,7 @@ function RecentProject({ path, onOpen, onRemove }) {
   );
 }
 
-export default function RecentProjects({ projects, onOpen, onRemove }) {
+export default function RecentProjects({ projects, projectNames, onOpen, onRemove }) {
   return (
     <section className="recent-projects" aria-labelledby="recent-title">
       <div className="recent-projects-heading">
@@ -41,6 +41,7 @@ export default function RecentProjects({ projects, onOpen, onRemove }) {
           <RecentProject
             key={path}
             path={path}
+            name={projectNames[path]}
             onOpen={onOpen}
             onRemove={onRemove}
           />
