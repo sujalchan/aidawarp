@@ -1,0 +1,17 @@
+{
+  "$schema": "https://schema.tauri.app/config/2",
+  "app": {
+    "windows": [
+      {
+        "title": "AIDAWARP LAUNCHER",
+        "width": 1280,
+        "height": 720,
+        "minWidth": 600,
+        "minHeight": 460,
+        "resizable": false,
+        "decorations": false,
+        "transparent": true
+      }
+    ]
+  }
+}

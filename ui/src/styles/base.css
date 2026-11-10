@@ -53,6 +53,13 @@ body {
   scrollbar-width: none;
 }
 
+html.macos-window,
+html.macos-window body {
+  overflow: hidden;
+  border-radius: 16px;
+  background: transparent;
+}
+
 .ambient-background {
   position: fixed;
   z-index: 0;
@@ -61,15 +68,16 @@ body {
   pointer-events: none;
 }
 
+html.macos-window .ambient-background {
+  border-radius: 16px;
+  background: var(--screen);
+}
+
 .ambient-code {
   position: absolute;
   inset: 0;
   width: 100%;
   height: 100%;
-  opacity: 0.78;
-  filter:
-    drop-shadow(0 0 2px rgba(230, 230, 230, 0.28))
-    drop-shadow(0 0 8px rgba(190, 190, 190, 0.14));
 }
 
 .crt-overlay {

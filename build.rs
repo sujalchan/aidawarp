@@ -21,6 +21,7 @@ fn run_npm(project_root: &str, args: &[&str]) -> std::io::Result<ExitStatus> {
 }
 
 fn main() {
+    println!("cargo:rerun-if-changed=tauri.macos.conf.json");
     println!("cargo:rerun-if-changed=ui/src");
     println!("cargo:rerun-if-changed=ui/index.html");
     println!("cargo:rerun-if-changed=ui/package.json");

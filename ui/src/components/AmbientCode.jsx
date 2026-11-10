@@ -49,9 +49,22 @@ export default function AmbientCode() {
     let pointerSwayY = 0;
     let pointerVelocityX = 0;
     let pointerVelocityY = 0;
+    const blendedColors = new Map();
 
     function clamp(value, min, max) {
       return Math.max(min, Math.min(max, value));
+    }
+
+    function blendWithScreen(color, strength) {
+      const level = Math.round(clamp(strength, 0, 1) * 255);
+      const key = color + ":" + level;
+      if (blendedColors.has(key)) return blendedColors.get(key);
+
+      const colorValue = Number.parseInt(color.slice(1), 16);
+      const mix = (channel) => Math.round(8 + (((colorValue >> channel) & 255) - 8) * level / 255);
+      const blended = `rgb(${mix(16)}, ${mix(8)}, ${mix(0)})`;
+      blendedColors.set(key, blended);
+      return blended;
     }
 
     function desiredFragmentCount() {
@@ -229,13 +242,17 @@ export default function AmbientCode() {
         depth,
         pointerWeight,
         hovered: false,
-        alpha: 0.035 + depth * 0.17,
+        alpha: 0.1 + depth * 0.35,
       };
     }
 
     function displayedPosition(fragment, time) {
-      const ambientX = Math.sin(time * fragment.frequencyX + fragment.phaseX) * fragment.amplitudeX;
-      const ambientY = Math.cos(time * fragment.frequencyY + fragment.phaseY) * fragment.amplitudeY;
+      const ambientX = prefersReducedMotion
+        ? 0
+        : Math.sin(time * fragment.frequencyX + fragment.phaseX) * fragment.amplitudeX;
+      const ambientY = prefersReducedMotion
+        ? 0
+        : Math.cos(time * fragment.frequencyY + fragment.phaseY) * fragment.amplitudeY;
       return {
         x: fragment.x + ambientX + pointerSwayX * fragment.pointerWeight,
         y: fragment.y + ambientY + pointerSwayY * fragment.pointerWeight,
@@ -259,7 +276,6 @@ export default function AmbientCode() {
         }
         if (prefersReducedMotion) {
           fragments.forEach((fragment) => {
-            fragment.age = fragment.decodeDuration;
             fragment.decodeAge = fragment.decodeDuration;
           });
         }
@@ -281,9 +297,7 @@ export default function AmbientCode() {
         }
       }
 
-      if (prefersReducedMotion) {
-        draw(0);
-      } else if (!document.hidden) {
+      if (!document.hidden) {
         cancelAnimationFrame(animationFrame);
         animationFrame = requestAnimationFrame(animate);
       }
@@ -336,7 +350,7 @@ export default function AmbientCode() {
           pointerPosition.x <= x + fragment.blockWidth &&
           pointerPosition.y >= y &&
           pointerPosition.y <= y + fragment.blockHeight;
-        if (isHovered && !fragment.hovered) {
+        if (isHovered && !fragment.hovered && !prefersReducedMotion) {
           fragments.forEach((otherFragment) => {
             otherFragment.decodeAge = otherFragment.decodeDuration;
           });
@@ -372,9 +386,13 @@ export default function AmbientCode() {
         const shimmer = 0.85 + Math.sin(time * 0.001 + fragment.phaseX) * 0.15;
 
         context.save();
-        context.globalAlpha = fragment.alpha * fadeIn * fadeOut * shimmer * (1 + mouseLight * 0.8);
+        const visualStrength = clamp(
+          fragment.alpha * fadeIn * fadeOut * shimmer * (1 + mouseLight * 0.8),
+          0,
+          1,
+        );
         context.font = '500 ' + String(fragment.size) + 'px Consolas, "Courier New", monospace';
-        context.shadowBlur = 2 + mouseLight * 14;
+        context.shadowBlur = (2 + mouseLight * 14) * visualStrength;
 
         fragment.lines.forEach((line, lineIndex) => {
           const lineStagger = 0.025;
@@ -445,8 +463,9 @@ export default function AmbientCode() {
           const syntaxRuns = fragment.syntaxRuns[lineIndex];
           for (let runIndex = 0; runIndex < syntaxRuns.length; runIndex += 1) {
             const { start, end, color } = syntaxRuns[runIndex];
-            context.fillStyle = color;
-            context.shadowColor = color;
+            const renderedColor = blendWithScreen(color, visualStrength);
+            context.fillStyle = renderedColor;
+            context.shadowColor = renderedColor;
             context.fillText(
               displayLine.slice(start, end),
               x + start * fragment.characterWidth,
@@ -474,7 +493,7 @@ export default function AmbientCode() {
       if (document.hidden) {
         cancelAnimationFrame(animationFrame);
         animationFrame = 0;
-      } else if (!prefersReducedMotion && !animationFrame) {
+      } else if (!animationFrame) {
         lastTime = 0;
         lastDraw = 0;
         animationFrame = requestAnimationFrame(animate);
