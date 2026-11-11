@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import AmbientCode from "./components/AmbientCode.jsx";
 import ProjectPicker from "./components/ProjectPicker.jsx";
 import RecentProjects from "./components/RecentProjects.jsx";
@@ -6,7 +6,9 @@ import Wordmark from "./components/Wordmark.jsx";
 import WindowControls from "./components/WindowControls.jsx";
 import {
   readRecentProjectNames,
+  readRecentProjectCreators,
   readRecentProjects,
+  saveRecentProjectCreators,
   saveRecentProjectNames,
   saveRecentProjects,
 } from "./utils/projectStorage.js";
@@ -18,12 +20,32 @@ import {
 export default function App() {
   const [recentProjects, setRecentProjects] = useState(readRecentProjects);
   const [recentProjectNames, setRecentProjectNames] = useState(readRecentProjectNames);
+  const [recentProjectCreators, setRecentProjectCreators] = useState(readRecentProjectCreators);
   const [statusMessage, setStatusMessage] = useState("");
   const [isChoosingProject, setIsChoosingProject] = useState(false);
   const [scratchLink, setScratchLink] = useState("");
   const [backgroundEffectsEnabled, setBackgroundEffectsEnabled] = useState(true);
 
-  function openProject(path, projectTitle = recentProjectNames[path]) {
+  // Persist creator names separately so Scratch API data does not affect project titles.
+  useEffect(() => {
+    saveRecentProjectCreators(recentProjectCreators);
+  }, [recentProjectCreators]);
+
+  const rememberProjectCreator = useCallback((path, creator) => {
+    if (typeof creator !== "string" || !creator.trim()) return;
+    const normalizedCreator = creator.trim();
+    setRecentProjectCreators((currentCreators) =>
+      currentCreators[path] === normalizedCreator
+        ? currentCreators
+        : { ...currentCreators, [path]: normalizedCreator },
+    );
+  }, []);
+
+  function openProject(
+    path,
+    projectTitle = recentProjectNames[path],
+    projectCreator = recentProjectCreators[path],
+  ) {
     const updatedProjects = [
       path,
       ...recentProjects.filter((projectPath) => projectPath !== path),
@@ -36,11 +58,8 @@ export default function App() {
       saveRecentProjectNames(updatedNames);
       setRecentProjectNames(updatedNames);
     }
-    const scratchProjectId = getProjectIdFromLink(path);
-    const projectLabel = projectTitle
-      ? projectTitle + (scratchProjectId ? " (" + scratchProjectId + ")" : "")
-      : scratchProjectId ?? path;
-    setStatusMessage("PROJECT SELECTED: " + projectLabel);
+    rememberProjectCreator(path, projectCreator);
+    setStatusMessage("");
   }
 
   async function removeRecentProject(path) {
@@ -56,6 +75,12 @@ export default function App() {
       delete updatedNames[path];
       saveRecentProjectNames(updatedNames);
       setRecentProjectNames(updatedNames);
+      setRecentProjectCreators((currentCreators) => {
+        if (!(path in currentCreators)) return currentCreators;
+        const updatedCreators = { ...currentCreators };
+        delete updatedCreators[path];
+        return updatedCreators;
+      });
     } catch (error) {
       setStatusMessage(`COULD NOT REMOVE PROJECT: ${String(error)}`);
     } finally {
@@ -80,8 +105,8 @@ export default function App() {
       const acceptedPath = await window.__TAURI__.core.invoke("accept_project_file", {
         path: project.path,
       });
-      openProject(acceptedPath, project.title + " (" + projectId + ")");
-      setStatusMessage("PROJECT RELOADED: " + project.title + " (" + projectId + ")");
+      openProject(acceptedPath, project.title, project.creator);
+      setStatusMessage("PROJECT RELOADED: " + project.title);
     } catch (error) {
       setStatusMessage(`COULD NOT RELOAD PROJECT: ${String(error)}`);
     } finally {
@@ -138,7 +163,7 @@ export default function App() {
       const acceptedPath = await window.__TAURI__.core.invoke("accept_project_file", {
         path: project.path,
       });
-      openProject(acceptedPath, project.title + " (" + projectId + ")");
+      openProject(acceptedPath, project.title, project.creator);
     } catch (error) {
       setStatusMessage("COULD NOT DOWNLOAD PROJECT: " + String(error));
     } finally {
@@ -175,9 +200,11 @@ export default function App() {
           <RecentProjects
             projects={recentProjects}
             projectNames={recentProjectNames}
+            projectCreators={recentProjectCreators}
             onOpen={openProject}
             onReload={reloadRecentProject}
             onRemove={removeRecentProject}
+            onCreatorResolved={rememberProjectCreator}
             isBusy={isChoosingProject}
           />
         </div>

@@ -41,6 +41,26 @@ async fn reload_cached_scratch_project(
     aida_project::download_scratch_project(project_id, projects_dir).await
 }
 
+/// Look up the author for a Scratch project already present in recent-project history.
+#[tauri::command]
+async fn get_scratch_project_creator(project_id: String) -> Result<Option<String>, String> {
+    let project_id = project_id
+        .parse::<u64>()
+        .map_err(|_| "Invalid Scratch project ID".to_string())?;
+
+    aida_project::get_scratch_project_creator(project_id).await
+}
+
+/// Fetch a Scratch thumbnail through Rust so the UI can read its pixels for lighting.
+#[tauri::command]
+async fn fetch_scratch_project_thumbnail(project_id: String) -> Result<Vec<u8>, String> {
+    let project_id = project_id
+        .parse::<u64>()
+        .map_err(|_| "Invalid Scratch project ID".to_string())?;
+
+    aida_project::download_scratch_project_thumbnail(project_id).await
+}
+
 /// Delete the archive only if its path resolves to AidaWarp's app-data cache.
 #[tauri::command]
 fn delete_cached_scratch_project(app: tauri::AppHandle, path: String) -> Result<bool, String> {
@@ -75,6 +95,8 @@ fn main() {
         .invoke_handler(tauri::generate_handler![
             download_scratch_project,
             reload_cached_scratch_project,
+            get_scratch_project_creator,
+            fetch_scratch_project_thumbnail,
             delete_cached_scratch_project,
             accept_project_file
         ])

@@ -12,6 +12,14 @@ struct ScratchProjectMetadata {
     id: u64,
     title: String,
     project_token: String,
+    #[serde(default)]
+    author: Option<ScratchProjectAuthor>,
+}
+
+#[derive(Debug, Deserialize)]
+struct ScratchProjectAuthor {
+    #[serde(default)]
+    username: Option<String>,
 }
 
 #[derive(Debug, Deserialize, Default)]
@@ -45,8 +53,77 @@ pub struct DownloadedScratchProject {
     pub id: u64,
     /// User-visible project title from Scratch metadata.
     pub title: String,
+    /// Scratch account name that created the project, when the API provides it.
+    pub creator: Option<String>,
     /// Absolute path to the saved `.sb3` archive.
     pub path: String,
+}
+
+/// Create the HTTP client used for Scratch API requests.
+fn scratch_client() -> Result<reqwest::Client, String> {
+    reqwest::Client::builder()
+        .timeout(std::time::Duration::from_secs(45))
+        .build()
+        .map_err(|error| error.to_string())
+}
+
+/// Fetch and validate public metadata for a Scratch project.
+async fn fetch_project_metadata(
+    client: &reqwest::Client,
+    project_id: u64,
+) -> Result<ScratchProjectMetadata, String> {
+    let metadata = client
+        .get(format!("https://api.scratch.mit.edu/projects/{project_id}"))
+        .send()
+        .await
+        .map_err(|error| error.to_string())?
+        .error_for_status()
+        .map_err(|error| error.to_string())?
+        .json::<ScratchProjectMetadata>()
+        .await
+        .map_err(|error| format!("Could not load Scratch project details: {error}"))?;
+
+    if metadata.id != project_id {
+        return Err("Scratch returned metadata for a different project".to_string());
+    }
+
+    Ok(metadata)
+}
+
+/// Look up the creator name for a previously cached Scratch project.
+pub async fn get_scratch_project_creator(project_id: u64) -> Result<Option<String>, String> {
+    let client = scratch_client()?;
+    let metadata = fetch_project_metadata(&client, project_id).await?;
+
+    Ok(metadata
+        .author
+        .and_then(|author| author.username)
+        .map(|username| username.trim().to_string())
+        .filter(|username| !username.is_empty()))
+}
+
+/// Fetch a Scratch thumbnail so the UI can derive a depth map from its pixels.
+pub async fn download_scratch_project_thumbnail(project_id: u64) -> Result<Vec<u8>, String> {
+    let client = scratch_client()?;
+    let response = client
+        .get(format!(
+            "https://cdn2.scratch.mit.edu/get_image/project/{project_id}_480x360.png"
+        ))
+        .send()
+        .await
+        .map_err(|error| format!("Could not fetch the Scratch thumbnail: {error}"))?
+        .error_for_status()
+        .map_err(|error| format!("Could not fetch the Scratch thumbnail: {error}"))?;
+    let bytes = response
+        .bytes()
+        .await
+        .map_err(|error| format!("Could not read the Scratch thumbnail: {error}"))?;
+
+    if bytes.is_empty() {
+        return Err("Scratch returned an empty project thumbnail".to_string());
+    }
+
+    Ok(bytes.to_vec())
 }
 
 /// Resolve Scratch's archive filename and reject paths that could escape its root.
@@ -126,26 +203,10 @@ pub async fn download_scratch_project(
     project_id: u64,
     projects_dir: impl AsRef<Path>,
 ) -> Result<DownloadedScratchProject, String> {
-    let client = reqwest::Client::builder()
-        .timeout(std::time::Duration::from_secs(45))
-        .build()
-        .map_err(|error| error.to_string())?;
+    let client = scratch_client()?;
 
     // Fetch metadata first because Scratch requires its project token to fetch JSON.
-    let metadata = client
-        .get(format!("https://api.scratch.mit.edu/projects/{project_id}"))
-        .send()
-        .await
-        .map_err(|error| error.to_string())?
-        .error_for_status()
-        .map_err(|error| error.to_string())?
-        .json::<ScratchProjectMetadata>()
-        .await
-        .map_err(|error| format!("Could not load Scratch project details: {error}"))?;
-
-    if metadata.id != project_id {
-        return Err("Scratch returned metadata for a different project".to_string());
-    }
+    let metadata = fetch_project_metadata(&client, project_id).await?;
     if metadata.title.trim().is_empty() {
         return Err("Scratch project has no title".to_string());
     }
@@ -165,10 +226,16 @@ pub async fn download_scratch_project(
     // Scratch serves project.json and media separately; include both in the archive.
     let assets = fetch_project_assets(&client, &project_json).await?;
     let archive_path = write_sb3_archive(projects_dir.as_ref(), project_id, &project_json, assets)?;
+    let creator = metadata
+        .author
+        .and_then(|author| author.username)
+        .map(|username| username.trim().to_string())
+        .filter(|username| !username.is_empty());
 
     Ok(DownloadedScratchProject {
         id: project_id,
         title: metadata.title,
+        creator,
         path: archive_path.to_string_lossy().into_owned(),
     })
 }

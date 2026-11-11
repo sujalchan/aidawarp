@@ -119,7 +119,9 @@ html.macos-window .ambient-background {
   display: flex;
   flex-direction: column;
   width: 100%;
-  min-height: 100vh;
+  height: 100vh;
+  height: 100dvh;
+  min-height: 0;
   margin: 0 auto;
   padding: 48px 28px 20px;
 }
@@ -130,13 +132,89 @@ html.macos-window .ambient-background {
   flex: 1;
   min-height: 0;
   grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-template-rows: minmax(0, 1fr);
+  overflow: hidden;
 }
 
 .launcher-primary {
   display: flex;
   min-width: 0;
+  min-height: 0;
   flex-direction: column;
   justify-content: center;
   padding: 18px 36px 18px 0;
+}
+
+/* Keep the footer controls aligned at the bottom of the launcher frame. */
+.launcher-footer {
+  position: relative;
+  z-index: 3;
+  display: flex;
+  flex: 0 0 auto;
+  align-items: center;
+  justify-content: space-between;
+  gap: 15px;
+  margin-top: 14px;
+  padding-top: 12px;
+  border-top: 2px solid var(--line);
+  color: var(--muted);
+  font-size: 12px;
+  letter-spacing: 0.06em;
+}
+
+@media (max-height: 650px) {
+  .launcher-frame {
+    padding-top: 38px;
+    padding-bottom: 12px;
+  }
+
+  .launcher-footer {
+    margin-top: 8px;
+    padding-top: 8px;
+  }
+}
+
+.background-effects-control {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.background-effects-toggle {
+  display: flex;
+  width: 34px;
+  height: 18px;
+  flex: 0 0 auto;
+  align-items: center;
+  padding: 2px;
+  border: 2px solid #494949;
+  border-radius: 10px;
+  background: #202020;
+  cursor: pointer;
+  transition: background-color 160ms ease, border-color 160ms ease;
+}
+
+.background-effects-toggle[aria-checked="true"] {
+  justify-content: flex-end;
+  border-color: #a0a0a0;
+  background: #444444;
+}
+
+.background-effects-toggle-thumb {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: #858585;
+  transition: background-color 160ms ease;
+}
+
+.background-effects-toggle[aria-checked="true"] .background-effects-toggle-thumb {
+  background: #e0e0e0;
+  box-shadow: 0 0 6px rgba(220, 220, 220, 0.5);
+}
+
+.background-effects-toggle:focus-visible {
+  outline: 2px solid var(--bright);
+  outline-offset: 3px;
 }
 
