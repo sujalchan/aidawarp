@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import AmbientCode from "./components/AmbientCode.jsx";
 import ProjectPicker from "./components/ProjectPicker.jsx";
 import RecentProjects from "./components/RecentProjects.jsx";
@@ -23,6 +23,11 @@ export default function App() {
   const [recentProjectCreators, setRecentProjectCreators] = useState(readRecentProjectCreators);
   const [statusMessage, setStatusMessage] = useState("");
   const [isChoosingProject, setIsChoosingProject] = useState(false);
+  const [isDownloadingProject, setIsDownloadingProject] = useState(false);
+  const [isReloadingProject, setIsReloadingProject] = useState(false);
+  const [isFinishingDownload, setIsFinishingDownload] = useState(false);
+  const [downloadProgress, setDownloadProgress] = useState(0);
+  const downloadBarTimer = useRef(null);
   const [scratchLink, setScratchLink] = useState("");
   const [backgroundEffectsEnabled, setBackgroundEffectsEnabled] = useState(true);
 
@@ -93,8 +98,22 @@ export default function App() {
     if (!projectId) return;
 
     setIsChoosingProject(true);
+    setIsReloadingProject(true);
+    setIsFinishingDownload(false);
+    window.clearTimeout(downloadBarTimer.current);
+    downloadBarTimer.current = null;
+    setDownloadProgress(0);
     setStatusMessage("RELOADING SCRATCH PROJECT…");
+    let unlistenProgress;
     try {
+      unlistenProgress = await window.__TAURI__.event.listen(
+        "scratch-download-progress",
+        ({ payload }) => {
+          if (Number.isInteger(payload)) {
+            setDownloadProgress(Math.max(0, Math.min(100, payload)));
+          }
+        },
+      );
       // Refresh the archive in place, then update its stored display title.
       const project = await window.__TAURI__.core.invoke("reload_cached_scratch_project", {
         path,
@@ -102,14 +121,22 @@ export default function App() {
       if (String(project.id) !== projectId || !project.title || !project.path) {
         throw new Error("Scratch project reload returned incomplete data");
       }
+      setDownloadProgress(100);
       const acceptedPath = await window.__TAURI__.core.invoke("accept_project_file", {
         path: project.path,
       });
       openProject(acceptedPath, project.title, project.creator);
       setStatusMessage("PROJECT RELOADED: " + project.title);
+      setIsFinishingDownload(true);
+      downloadBarTimer.current = window.setTimeout(() => {
+        setIsFinishingDownload(false);
+        downloadBarTimer.current = null;
+      }, 600);
     } catch (error) {
       setStatusMessage(`COULD NOT RELOAD PROJECT: ${String(error)}`);
     } finally {
+      unlistenProgress?.();
+      setIsReloadingProject(false);
       setIsChoosingProject(false);
     }
   }
@@ -151,8 +178,22 @@ export default function App() {
     }
 
     setIsChoosingProject(true);
+    setIsDownloadingProject(true);
+    setIsFinishingDownload(false);
+    window.clearTimeout(downloadBarTimer.current);
+    downloadBarTimer.current = null;
+    setDownloadProgress(0);
     setStatusMessage("DOWNLOADING SCRATCH PROJECT…");
+    let unlistenProgress;
     try {
+      unlistenProgress = await window.__TAURI__.event.listen(
+        "scratch-download-progress",
+        ({ payload }) => {
+          if (Number.isInteger(payload)) {
+            setDownloadProgress(Math.max(0, Math.min(100, payload)));
+          }
+        },
+      );
       // Rust downloads the archive into app data and returns its local path.
       const project = await window.__TAURI__.core.invoke("download_scratch_project", {
         projectId,
@@ -160,13 +201,21 @@ export default function App() {
       if (String(project.id) !== projectId || !project.title || !project.path) {
         throw new Error("Scratch project download returned incomplete data");
       }
+      setDownloadProgress(100);
       const acceptedPath = await window.__TAURI__.core.invoke("accept_project_file", {
         path: project.path,
       });
       openProject(acceptedPath, project.title, project.creator);
+      setIsFinishingDownload(true);
+      downloadBarTimer.current = window.setTimeout(() => {
+        setIsFinishingDownload(false);
+        downloadBarTimer.current = null;
+      }, 600);
     } catch (error) {
       setStatusMessage("COULD NOT DOWNLOAD PROJECT: " + String(error));
     } finally {
+      unlistenProgress?.();
+      setIsDownloadingProject(false);
       setIsChoosingProject(false);
     }
   }
@@ -190,6 +239,10 @@ export default function App() {
             <ProjectPicker
               chooseProject={chooseProject}
               isChoosingProject={isChoosingProject}
+              isDownloadingProject={isDownloadingProject}
+              isReloadingProject={isReloadingProject}
+              isFinishingDownload={isFinishingDownload}
+              downloadProgress={downloadProgress}
               scratchLink={scratchLink}
               onScratchLinkChange={setScratchLink}
               onLoadScratchLink={loadScratchLink}

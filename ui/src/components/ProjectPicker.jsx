@@ -3,6 +3,10 @@ import { useState } from "react";
 export default function ProjectPicker({
   chooseProject,
   isChoosingProject,
+  isDownloadingProject,
+  isReloadingProject,
+  isFinishingDownload,
+  downloadProgress,
   scratchLink,
   onScratchLinkChange,
   onLoadScratchLink,
@@ -68,6 +72,20 @@ export default function ProjectPicker({
             <span aria-hidden="true">↵</span>
           </button>
         </form>
+        {(isDownloadingProject || isReloadingProject || isFinishingDownload) && (
+          <div
+            className={`project-download-progress${isFinishingDownload ? " finishing" : ""}`}
+            role="progressbar"
+            aria-label="Loading Scratch project"
+            aria-valuemin={0}
+            aria-valuemax={100}
+            aria-valuenow={isFinishingDownload ? 100 : Math.min(downloadProgress, 95)}
+          >
+            <span
+              style={{ width: `${isFinishingDownload ? 100 : Math.min(downloadProgress, 95)}%` }}
+            />
+          </div>
+        )}
         <p className="project-selection-status" role="status" aria-live="polite">
           {statusMessage}
         </p>

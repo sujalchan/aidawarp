@@ -2,6 +2,10 @@
 
 use std::{fs, io::ErrorKind, path::Path};
 
+fn is_invalid_path_error(error: &std::io::Error) -> bool {
+    error.kind() == ErrorKind::InvalidInput || (cfg!(windows) && error.raw_os_error() == Some(123))
+}
+
 /// Resolve a recent-project path to a cached Scratch ID only when it belongs to
 /// the expected `projects/{id}.sb3` directory. Missing files remain refreshable.
 pub fn cached_scratch_project_id(
@@ -26,6 +30,10 @@ pub fn cached_scratch_project_id(
     let canonical_parent = match fs::canonicalize(parent) {
         Ok(path) => path,
         Err(error) if error.kind() == ErrorKind::NotFound => return Ok(None),
+        // Recent-project history can outlive or contain malformed paths. Those
+        // entries are not eligible for cache operations, but can still be removed
+        // from the UI's recent-project list.
+        Err(error) if is_invalid_path_error(&error) => return Ok(None),
         Err(error) => return Err(format!("Could not resolve project path: {error}")),
     };
     if canonical_parent != projects_dir {
@@ -62,6 +70,7 @@ pub fn cached_scratch_project_id(
         Ok(canonical_path) if canonical_path == expected_path => Ok(Some(project_id)),
         Ok(_) => Ok(None),
         Err(error) if error.kind() == ErrorKind::NotFound => Ok(Some(project_id)),
+        Err(error) if is_invalid_path_error(&error) => Ok(None),
         Err(error) => Err(format!("Could not resolve project path: {error}")),
     }
 }

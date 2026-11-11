@@ -1,6 +1,10 @@
 //! Fetches Scratch project data and media before packaging it as a local `.sb3`.
 
-use std::{collections::BTreeSet, path::Path};
+use std::{
+    collections::BTreeSet,
+    path::Path,
+    sync::{Arc, Mutex},
+};
 
 use crate::archive::write_sb3_archive;
 use futures_util::{StreamExt, TryStreamExt};
@@ -65,6 +69,59 @@ fn scratch_client() -> Result<reqwest::Client, String> {
         .timeout(std::time::Duration::from_secs(45))
         .build()
         .map_err(|error| error.to_string())
+}
+
+struct ProgressReporter<F> {
+    callback: F,
+    last_percent: Mutex<u8>,
+}
+
+impl<F: Fn(u8)> ProgressReporter<F> {
+    fn report(&self, percent: u8) {
+        let mut last_percent = self
+            .last_percent
+            .lock()
+            .unwrap_or_else(std::sync::PoisonError::into_inner);
+        let percent = percent.min(100);
+        if percent > *last_percent {
+            *last_percent = percent;
+            (self.callback)(percent);
+        }
+    }
+}
+
+async fn read_response_body<F>(
+    response: reqwest::Response,
+    progress_start: u8,
+    progress_end: u8,
+    progress: &ProgressReporter<F>,
+) -> Result<Vec<u8>, reqwest::Error>
+where
+    F: Fn(u8),
+{
+    let total_bytes = response.content_length().filter(|total| *total > 0);
+    let mut downloaded_bytes = 0u64;
+    let mut body = Vec::new();
+    let mut chunks = response.bytes_stream();
+
+    while let Some(chunk) = chunks.next().await {
+        let chunk = chunk?;
+        downloaded_bytes = downloaded_bytes.saturating_add(chunk.len() as u64);
+        body.extend_from_slice(&chunk);
+
+        if let Some(total_bytes) = total_bytes {
+            let progress_range = u64::from(progress_end - progress_start);
+            let progressed = downloaded_bytes
+                .saturating_mul(progress_range)
+                .checked_div(total_bytes)
+                .unwrap_or(progress_range)
+                .min(progress_range);
+            progress.report(progress_start + progressed as u8);
+        }
+    }
+
+    progress.report(progress_end);
+    Ok(body)
 }
 
 /// Fetch and validate public metadata for a Scratch project.
@@ -155,10 +212,55 @@ fn asset_filename(asset: &ScratchAsset) -> Result<String, String> {
 }
 
 /// Fetch every distinct costume and sound referenced in the project JSON.
-async fn fetch_project_assets(
+struct AssetProgress {
+    complete: Vec<bool>,
+    downloaded_bytes: Vec<u64>,
+    total_bytes: Vec<Option<u64>>,
+}
+
+fn report_asset_progress<F>(
+    asset_progress: &Mutex<AssetProgress>,
+    asset_count: usize,
+    progress: &ProgressReporter<F>,
+) where
+    F: Fn(u8),
+{
+    let completed_fraction = {
+        let state = asset_progress
+            .lock()
+            .unwrap_or_else(std::sync::PoisonError::into_inner);
+        state
+            .complete
+            .iter()
+            .enumerate()
+            .map(|(index, complete)| {
+                if *complete {
+                    1.0
+                } else if let Some(total_bytes) = state.total_bytes[index] {
+                    if total_bytes == 0 {
+                        0.0
+                    } else {
+                        (state.downloaded_bytes[index] as f64 / total_bytes as f64).min(1.0)
+                    }
+                } else {
+                    0.0
+                }
+            })
+            .sum::<f64>()
+            / asset_count as f64
+    };
+
+    progress.report(15 + (84.0 * completed_fraction).floor() as u8);
+}
+
+async fn fetch_project_assets<F>(
     client: &reqwest::Client,
     project_json: &[u8],
-) -> Result<Vec<(String, Vec<u8>)>, String> {
+    progress: Arc<ProgressReporter<F>>,
+) -> Result<Vec<(String, Vec<u8>)>, String>
+where
+    F: Fn(u8) + Send + Sync + 'static,
+{
     let document: ScratchProjectDocument = serde_json::from_slice(project_json)
         .map_err(|error| format!("Could not read Scratch project assets: {error}"))?;
     // Deduplicate assets because multiple costumes or sounds can share one file.
@@ -170,10 +272,24 @@ async fn fetch_project_assets(
         }
     }
 
+    let asset_count = filenames.len();
+    if asset_count == 0 {
+        progress.report(99);
+        return Ok(Vec::new());
+    }
+
+    let asset_progress = Arc::new(Mutex::new(AssetProgress {
+        complete: vec![false; asset_count],
+        downloaded_bytes: vec![0; asset_count],
+        total_bytes: vec![None; asset_count],
+    }));
+
     // Bound parallel requests so large projects do not open an unbounded number
     // of connections to Scratch's asset host.
-    futures_util::stream::iter(filenames.into_iter().map(|filename| {
+    futures_util::stream::iter(filenames.into_iter().enumerate().map(|(index, filename)| {
         let client = client.clone();
+        let progress = Arc::clone(&progress);
+        let asset_progress = Arc::clone(&asset_progress);
         async move {
             let url = format!("https://assets.scratch.mit.edu/internalapi/asset/{filename}/get/");
             let response = client
@@ -183,11 +299,40 @@ async fn fetch_project_assets(
                 .map_err(|error| format!("Could not download Scratch asset {filename}: {error}"))?
                 .error_for_status()
                 .map_err(|error| format!("Could not download Scratch asset {filename}: {error}"))?;
-            let bytes = response
-                .bytes()
-                .await
-                .map_err(|error| format!("Could not read Scratch asset {filename}: {error}"))?;
-            Ok::<_, String>((filename, bytes.to_vec()))
+            let total_bytes = response.content_length();
+            {
+                let mut state = asset_progress
+                    .lock()
+                    .unwrap_or_else(std::sync::PoisonError::into_inner);
+                state.total_bytes[index] = total_bytes;
+            }
+            report_asset_progress(&asset_progress, asset_count, &progress);
+
+            let mut downloaded_bytes = 0u64;
+            let mut bytes = Vec::new();
+            let mut chunks = response.bytes_stream();
+            while let Some(chunk) = chunks.next().await {
+                let chunk = chunk
+                    .map_err(|error| format!("Could not read Scratch asset {filename}: {error}"))?;
+                downloaded_bytes = downloaded_bytes.saturating_add(chunk.len() as u64);
+                bytes.extend_from_slice(&chunk);
+                {
+                    let mut state = asset_progress
+                        .lock()
+                        .unwrap_or_else(std::sync::PoisonError::into_inner);
+                    state.downloaded_bytes[index] = downloaded_bytes;
+                }
+                report_asset_progress(&asset_progress, asset_count, &progress);
+            }
+
+            {
+                let mut state = asset_progress
+                    .lock()
+                    .unwrap_or_else(std::sync::PoisonError::into_inner);
+                state.complete[index] = true;
+            }
+            report_asset_progress(&asset_progress, asset_count, &progress);
+            Ok::<_, String>((filename, bytes))
         }
     }))
     .buffer_unordered(8)
@@ -199,33 +344,44 @@ async fn fetch_project_assets(
 ///
 /// `projects_dir` is supplied by the Tauri host so this crate stays independent
 /// of platform-specific app-data path resolution.
-pub async fn download_scratch_project(
+pub async fn download_scratch_project<F>(
     project_id: u64,
     projects_dir: impl AsRef<Path>,
-) -> Result<DownloadedScratchProject, String> {
+    on_progress: F,
+) -> Result<DownloadedScratchProject, String>
+where
+    F: Fn(u8) + Send + Sync + 'static,
+{
+    let progress = Arc::new(ProgressReporter {
+        callback: on_progress,
+        last_percent: Mutex::new(0),
+    });
+    progress.report(1);
     let client = scratch_client()?;
 
     // Fetch metadata first because Scratch requires its project token to fetch JSON.
     let metadata = fetch_project_metadata(&client, project_id).await?;
+    progress.report(5);
     if metadata.title.trim().is_empty() {
         return Err("Scratch project has no title".to_string());
     }
 
-    let project_json = client
+    let project_response = client
         .get(format!("https://projects.scratch.mit.edu/{project_id}"))
         .query(&[("token", metadata.project_token.as_str())])
         .send()
         .await
         .map_err(|error| error.to_string())?
         .error_for_status()
-        .map_err(|error| error.to_string())?
-        .bytes()
+        .map_err(|error| error.to_string())?;
+    let project_json = read_response_body(project_response, 5, 15, progress.as_ref())
         .await
         .map_err(|error| format!("Could not download Scratch project data: {error}"))?;
 
     // Scratch serves project.json and media separately; include both in the archive.
-    let assets = fetch_project_assets(&client, &project_json).await?;
+    let assets = fetch_project_assets(&client, &project_json, Arc::clone(&progress)).await?;
     let archive_path = write_sb3_archive(projects_dir.as_ref(), project_id, &project_json, assets)?;
+    progress.report(100);
     let creator = metadata
         .author
         .and_then(|author| author.username)

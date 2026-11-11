@@ -1,6 +1,6 @@
 use std::path::PathBuf;
 
-use tauri::Manager;
+use tauri::{Emitter, Manager};
 
 fn project_cache_dir(app: &tauri::AppHandle) -> Result<PathBuf, String> {
     app.path()
@@ -23,7 +23,10 @@ async fn download_scratch_project(
     // placing generated archives in the user's Downloads folder.
     let projects_dir = project_cache_dir(&app)?;
 
-    aida_project::download_scratch_project(project_id, projects_dir).await
+    aida_project::download_scratch_project(project_id, projects_dir, move |percent| {
+        let _ = app.emit("scratch-download-progress", percent);
+    })
+    .await
 }
 
 /// Refresh a cached Scratch project using the ID encoded in its app-data path.
@@ -38,7 +41,10 @@ async fn reload_cached_scratch_project(
     let project_id = aida_project::cached_scratch_project_id(&path, &projects_dir)?
         .ok_or_else(|| "This project is not a cached Scratch download".to_string())?;
 
-    aida_project::download_scratch_project(project_id, projects_dir).await
+    aida_project::download_scratch_project(project_id, projects_dir, move |percent| {
+        let _ = app.emit("scratch-download-progress", percent);
+    })
+    .await
 }
 
 /// Look up the author for a Scratch project already present in recent-project history.

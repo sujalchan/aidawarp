@@ -167,6 +167,28 @@ h1 {
   opacity: 0.65;
 }
 
+.project-download-progress {
+  width: min(100%, 440px);
+  height: 4px;
+  margin: 12px auto 0;
+  overflow: hidden;
+  border-radius: 999px;
+  background: rgba(240, 240, 240, 0.18);
+}
+
+.project-download-progress > span {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: var(--bright);
+  box-shadow: 0 0 8px rgba(240, 240, 240, 0.42);
+  transition: width 280ms ease-out;
+}
+
+.project-download-progress.finishing > span {
+  transition: width 500ms cubic-bezier(0.2, 0.75, 0.3, 1);
+}
+
 .project-picker > .picker-copy > .project-selection-status {
   min-height: 17px;
   margin: 12px 0 0;
