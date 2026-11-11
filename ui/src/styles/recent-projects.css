@@ -1,6 +1,7 @@
 .recent-projects {
-  flex: 1;
-  padding-top: 24px;
+  min-width: 0;
+  padding: 18px 0 0 36px;
+  border-left: 2px solid var(--line);
 }
 
 .recent-projects-heading {
@@ -65,12 +66,40 @@ h2 {
   transition: color 120ms ease, opacity 120ms ease, text-shadow 120ms ease;
 }
 
+.reload-recent-project {
+  display: grid;
+  width: 30px;
+  flex: 0 0 auto;
+  place-items: center;
+  border: 0;
+  background: transparent;
+  color: var(--muted);
+  cursor: pointer;
+  font-size: 20px;
+  opacity: 0.65;
+  transition: color 120ms ease, opacity 120ms ease, text-shadow 120ms ease;
+}
+
+.reload-recent-project:hover,
+.reload-recent-project:focus-visible {
+  outline: none;
+  color: var(--mint);
+  opacity: 1;
+  text-shadow: 0 0 8px rgba(189, 189, 189, 0.55);
+}
+
 .remove-recent-project:hover,
 .remove-recent-project:focus-visible {
   outline: none;
   color: #ff827a;
   opacity: 1;
   text-shadow: 0 0 8px rgba(255, 95, 87, 0.65);
+}
+
+.reload-recent-project:disabled,
+.remove-recent-project:disabled {
+  cursor: default;
+  opacity: 0.35;
 }
 
 .recent-project-details {

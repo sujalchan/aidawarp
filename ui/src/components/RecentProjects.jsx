@@ -1,7 +1,11 @@
 import FolderIcon from "./FolderIcon.jsx";
 import { projectName } from "../utils/projectStorage.js";
+import { getCachedScratchProjectId } from "../utils/scratchProjectId.js";
 
-function RecentProject({ path, name, onOpen, onRemove }) {
+function RecentProject({ path, name, onOpen, onReload, onRemove, isBusy }) {
+  const cachedProjectId = getCachedScratchProjectId(path);
+  const displayName = name || projectName(path);
+
   return (
     <div className="recent-project-row">
       <button
@@ -18,10 +22,24 @@ function RecentProject({ path, name, onOpen, onRemove }) {
           OPEN &gt;
         </span>
       </button>
+      {/* Only cached Scratch archives have an ID that can be refreshed. */}
+      {cachedProjectId && (
+        <button
+          className="reload-recent-project"
+          type="button"
+          aria-label={`Reload latest Scratch version of ${displayName}`}
+          title="Download the latest Scratch version"
+          disabled={isBusy}
+          onClick={() => onReload(path)}
+        >
+          <span aria-hidden="true">↻</span>
+        </button>
+      )}
       <button
         className="remove-recent-project"
         type="button"
-        aria-label={`Remove ${projectName(path)} from recent projects`}
+        aria-label={`Remove ${displayName} from recent projects`}
+        disabled={isBusy}
         onClick={() => onRemove(path)}
       >
         <span aria-hidden="true">×</span>
@@ -30,7 +48,14 @@ function RecentProject({ path, name, onOpen, onRemove }) {
   );
 }
 
-export default function RecentProjects({ projects, projectNames, onOpen, onRemove }) {
+export default function RecentProjects({
+  projects,
+  projectNames,
+  onOpen,
+  onReload,
+  onRemove,
+  isBusy,
+}) {
   return (
     <section className="recent-projects" aria-labelledby="recent-title">
       <div className="recent-projects-heading">
@@ -43,7 +68,9 @@ export default function RecentProjects({ projects, projectNames, onOpen, onRemov
             path={path}
             name={projectNames[path]}
             onOpen={onOpen}
+            onReload={onReload}
             onRemove={onRemove}
+            isBusy={isBusy}
           />
         ))}
       </div>

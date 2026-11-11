@@ -10,7 +10,10 @@ import {
   saveRecentProjectNames,
   saveRecentProjects,
 } from "./utils/projectStorage.js";
-import { getProjectIdFromLink } from "./utils/scratchProjectId.js";
+import {
+  getCachedScratchProjectId,
+  getProjectIdFromLink,
+} from "./utils/scratchProjectId.js";
 
 export default function App() {
   const [recentProjects, setRecentProjects] = useState(readRecentProjects);
@@ -40,14 +43,50 @@ export default function App() {
     setStatusMessage("PROJECT SELECTED: " + projectLabel);
   }
 
-  function removeRecentProject(path) {
-    const updatedProjects = recentProjects.filter((projectPath) => projectPath !== path);
-    saveRecentProjects(updatedProjects);
-    setRecentProjects(updatedProjects);
-    const updatedNames = { ...recentProjectNames };
-    delete updatedNames[path];
-    saveRecentProjectNames(updatedNames);
-    setRecentProjectNames(updatedNames);
+  async function removeRecentProject(path) {
+    setIsChoosingProject(true);
+    try {
+      // The Rust command deletes only paths inside the app-data project cache.
+      await window.__TAURI__.core.invoke("delete_cached_scratch_project", { path });
+
+      const updatedProjects = recentProjects.filter((projectPath) => projectPath !== path);
+      saveRecentProjects(updatedProjects);
+      setRecentProjects(updatedProjects);
+      const updatedNames = { ...recentProjectNames };
+      delete updatedNames[path];
+      saveRecentProjectNames(updatedNames);
+      setRecentProjectNames(updatedNames);
+    } catch (error) {
+      setStatusMessage(`COULD NOT REMOVE PROJECT: ${String(error)}`);
+    } finally {
+      setIsChoosingProject(false);
+    }
+  }
+
+  async function reloadRecentProject(path) {
+    const projectId = getCachedScratchProjectId(path);
+    if (!projectId) return;
+
+    setIsChoosingProject(true);
+    setStatusMessage("RELOADING SCRATCH PROJECT…");
+    try {
+      // Refresh the archive in place, then update its stored display title.
+      const project = await window.__TAURI__.core.invoke("reload_cached_scratch_project", {
+        path,
+      });
+      if (String(project.id) !== projectId || !project.title || !project.path) {
+        throw new Error("Scratch project reload returned incomplete data");
+      }
+      const acceptedPath = await window.__TAURI__.core.invoke("accept_project_file", {
+        path: project.path,
+      });
+      openProject(acceptedPath, project.title + " (" + projectId + ")");
+      setStatusMessage("PROJECT RELOADED: " + project.title + " (" + projectId + ")");
+    } catch (error) {
+      setStatusMessage(`COULD NOT RELOAD PROJECT: ${String(error)}`);
+    } finally {
+      setIsChoosingProject(false);
+    }
   }
 
   async function chooseProject() {
@@ -63,7 +102,11 @@ export default function App() {
       });
 
       if (typeof project === "string") {
-        openProject(project);
+        // Validate and normalize the native file-dialog path in Rust before storing it.
+        const acceptedPath = await window.__TAURI__.core.invoke("accept_project_file", {
+          path: project,
+        });
+        openProject(acceptedPath);
       } else {
         setStatusMessage("SELECTION CANCELLED");
       }
@@ -83,17 +126,21 @@ export default function App() {
     }
 
     setIsChoosingProject(true);
-    setStatusMessage("LOADING PROJECT NAME…");
+    setStatusMessage("DOWNLOADING SCRATCH PROJECT…");
     try {
-      const project = await window.__TAURI__.core.invoke("fetch_scratch_project", {
+      // Rust downloads the archive into app data and returns its local path.
+      const project = await window.__TAURI__.core.invoke("download_scratch_project", {
         projectId,
       });
-      if (String(project.id) !== projectId || !project.title) {
-        throw new Error("Scratch returned different project metadata");
+      if (String(project.id) !== projectId || !project.title || !project.path) {
+        throw new Error("Scratch project download returned incomplete data");
       }
-      openProject("https://scratch.mit.edu/projects/" + projectId + "/", project.title);
-    } catch {
-      setStatusMessage("COULD NOT LOAD PROJECT");
+      const acceptedPath = await window.__TAURI__.core.invoke("accept_project_file", {
+        path: project.path,
+      });
+      openProject(acceptedPath, project.title + " (" + projectId + ")");
+    } catch (error) {
+      setStatusMessage("COULD NOT DOWNLOAD PROJECT: " + String(error));
     } finally {
       setIsChoosingProject(false);
     }
@@ -101,32 +148,39 @@ export default function App() {
 
   return (
     <>
-      {backgroundEffectsEnabled && <AmbientCode />}
+      <AmbientCode enabled={backgroundEffectsEnabled} />
       <main className="launcher-frame">
         <div className="window-titlebar" data-tauri-drag-region>
           <WindowControls />
         </div>
-        <header className="launcher-header">
-          <div className="brand-lockup">
-            <Wordmark />
-            <div className="launcher-subtitle">SCRATCH TO RUST CONVERTER</div>
-          </div>
-        </header>
+        <div className="launcher-layout">
+          <div className="launcher-primary">
+            <header className="launcher-header">
+              <div className="brand-lockup">
+                <Wordmark />
+                <div className="launcher-subtitle">SCRATCH TO RUST CONVERTER</div>
+              </div>
+            </header>
 
-        <ProjectPicker
-          chooseProject={chooseProject}
-          isChoosingProject={isChoosingProject}
-          scratchLink={scratchLink}
-          onScratchLinkChange={setScratchLink}
-          onLoadScratchLink={loadScratchLink}
-          statusMessage={statusMessage}
-        />
-        <RecentProjects
-          projects={recentProjects}
-          projectNames={recentProjectNames}
-          onOpen={openProject}
-          onRemove={removeRecentProject}
-        />
+            <ProjectPicker
+              chooseProject={chooseProject}
+              isChoosingProject={isChoosingProject}
+              scratchLink={scratchLink}
+              onScratchLinkChange={setScratchLink}
+              onLoadScratchLink={loadScratchLink}
+              statusMessage={statusMessage}
+            />
+          </div>
+
+          <RecentProjects
+            projects={recentProjects}
+            projectNames={recentProjectNames}
+            onOpen={openProject}
+            onReload={reloadRecentProject}
+            onRemove={removeRecentProject}
+            isBusy={isChoosingProject}
+          />
+        </div>
 
         <footer className="launcher-footer">
           <span>STATIC TALENT GROUP</span>

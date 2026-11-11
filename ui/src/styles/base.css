@@ -65,12 +65,13 @@ html.macos-window body {
   z-index: 0;
   inset: 0;
   overflow: hidden;
+  /* Keep the transparent macOS window backed by the app surface when effects are off. */
+  background: var(--screen);
   pointer-events: none;
 }
 
 html.macos-window .ambient-background {
   border-radius: 16px;
-  background: var(--screen);
 }
 
 .ambient-code {
@@ -117,9 +118,25 @@ html.macos-window .ambient-background {
   z-index: 1;
   display: flex;
   flex-direction: column;
-  width: min(100%, 820px);
+  width: 100%;
   min-height: 100vh;
   margin: 0 auto;
-  padding: 40px 46px 20px;
+  padding: 48px 28px 20px;
+}
+
+/* Keep project entry on the left and the recent-project list on the right. */
+.launcher-layout {
+  display: grid;
+  flex: 1;
+  min-height: 0;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.launcher-primary {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  justify-content: center;
+  padding: 18px 36px 18px 0;
 }
 

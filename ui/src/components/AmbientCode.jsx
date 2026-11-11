@@ -1,10 +1,12 @@
 import { useEffect, useRef } from 'react';
 import { rustCodeBlocks } from '../data/rustCodeBlocks.js';
 
-export default function AmbientCode() {
+export default function AmbientCode({ enabled = true }) {
   const canvasRef = useRef(null);
 
   useEffect(() => {
+    if (!enabled) return;
+
     const canvas = canvasRef.current;
     const context = canvas?.getContext("2d");
     if (!canvas || !context) return;
@@ -568,14 +570,18 @@ export default function AmbientCode() {
       window.removeEventListener("pointerleave", handlePointerLeave);
       cancelAnimationFrame(animationFrame);
     };
-  }, []);
+  }, [enabled]);
 
   return (
     <div className="ambient-background" aria-hidden="true">
-      <canvas ref={canvasRef} className="ambient-code" />
-      <div className="edge-blur edge-blur-top" />
-      <div className="edge-blur edge-blur-bottom" />
-      <div className="crt-overlay" />
+      {enabled && (
+        <>
+          <canvas ref={canvasRef} className="ambient-code" />
+          <div className="edge-blur edge-blur-top" />
+          <div className="edge-blur edge-blur-bottom" />
+          <div className="crt-overlay" />
+        </>
+      )}
     </div>
   );
 }

@@ -6,7 +6,10 @@
   padding: 24px;
   border: 2px solid var(--line);
   border-radius: 8px;
-  background: var(--panel);
+  /* The translucent fill remains legible even when a webview lacks backdrop blur. */
+  background: rgba(17, 17, 17, 0.32);
+  -webkit-backdrop-filter: blur(5px) saturate(125%);
+  backdrop-filter: blur(5px) saturate(125%);
 }
 
 .picker-copy {

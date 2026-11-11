@@ -6,12 +6,12 @@ edition = "2024"
 [dependencies]
 tauri = { version = "2" }
 tauri-plugin-dialog = "2"
-reqwest = { version = "0.12", default-features = false, features = ["json", "rustls-tls"] }
-serde = { version = "1", features = ["derive"] }
+# Scratch network and archive work is isolated in aida-project.
+aida-project = { path = "aida-project" }
 
 [build-dependencies]
 tauri-build = { version = "2" }
 
 [workspace]
-members = ["aida-ast", "aida-runtime"]
+members = ["aida-ast", "aida-project", "aida-runtime"]
 resolver = "3"

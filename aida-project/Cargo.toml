@@ -1,0 +1,15 @@
+[package]
+name = "aida-project"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+# These dependencies are scoped to Scratch project downloading and SB3 packaging.
+futures-util = "0.3"
+reqwest = { version = "0.12", default-features = false, features = [
+    "json",
+    "rustls-tls",
+] }
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+zip = { version = "2", default-features = false, features = ["deflate"] }

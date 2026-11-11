@@ -1,10 +1,25 @@
-@media (max-width: 660px) {
+@media (max-width: 760px) {
+  /* Stack the panels when two columns would make their controls too narrow. */
   .launcher-frame {
     padding: 40px 22px 16px;
   }
 
+  .launcher-layout {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .launcher-primary {
+    padding: 12px 0 0;
+  }
+
   .project-picker {
     padding: 20px;
+  }
+
+  .recent-projects {
+    padding: 24px 0 0;
+    border-top: 2px solid var(--line);
+    border-left: 0;
   }
 }
 

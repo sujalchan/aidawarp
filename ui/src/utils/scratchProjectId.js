@@ -22,3 +22,9 @@ export function getProjectIdFromLink(value) {
 
   return null;
 }
+
+// Cached Scratch downloads use the app-data path `projects/{id}.sb3`.
+export function getCachedScratchProjectId(path) {
+  const normalizedPath = path.replace(/\\/g, "/");
+  return normalizedPath.match(/(?:^|\/)projects\/(\d+)\.sb3$/i)?.[1] ?? null;
+}
