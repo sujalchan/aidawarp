@@ -39,7 +39,11 @@ export default function AmbientCode() {
     let width = 0;
     let height = 0;
     let lastTime = 0;
-    let lastDraw = 0;
+    let lastFrameTime = 0;
+    let sampleElapsed = 0;
+    let sampleFrameCount = 0;
+    let sampleSlowFrameCount = 0;
+    let stablePerformanceSamples = 0;
     let animationFrame = 0;
     let fragments = [];
     const activeSnippets = new Map();
@@ -67,8 +71,17 @@ export default function AmbientCode() {
       return blended;
     }
 
-    function desiredFragmentCount() {
-      return Math.max(3, Math.min(24, Math.floor((width * height) / 60000)));
+    function maximumFragmentCount() {
+      return Math.max(4, Math.min(24, Math.floor((width * height) / 60000)));
+    }
+
+    function adjustFragmentCount(targetCount) {
+      while (fragments.length > targetCount) {
+        releaseSnippet(fragments.pop());
+      }
+      while (fragments.length < targetCount) {
+        fragments.push(createFragment());
+      }
     }
 
     function releaseSnippet(fragment) {
@@ -271,7 +284,7 @@ export default function AmbientCode() {
 
       const isInitialSize = fragments.length === 0;
       if (isInitialSize) {
-        for (let index = 0; index < desiredFragmentCount(); index += 1) {
+        for (let index = 0; index < maximumFragmentCount(); index += 1) {
           fragments.push(createFragment());
         }
         if (prefersReducedMotion) {
@@ -288,13 +301,7 @@ export default function AmbientCode() {
           fragment.x = clamp(fragment.x, 12, Math.max(12, width - fragment.blockWidth - 12));
           fragment.y = clamp(fragment.y, 12, Math.max(12, height - fragment.blockHeight - 12));
         });
-        const targetCount = desiredFragmentCount();
-        while (fragments.length > targetCount) {
-          releaseSnippet(fragments.pop());
-        }
-        while (fragments.length < desiredFragmentCount()) {
-          fragments.push(createFragment());
-        }
+        adjustFragmentCount(Math.min(fragments.length, maximumFragmentCount()));
       }
 
       if (!document.hidden) {
@@ -482,10 +489,34 @@ export default function AmbientCode() {
         animationFrame = 0;
         return;
       }
-      if (!lastDraw || time - lastDraw >= 1000 / 30) {
-        draw(time);
-        lastDraw = time;
+      if (lastFrameTime) {
+        const frameInterval = time - lastFrameTime;
+        sampleElapsed += frameInterval;
+        sampleFrameCount += 1;
+        if (frameInterval > 1000 / 60 + 0.5) sampleSlowFrameCount += 1;
+
+        if (sampleElapsed >= 1000) {
+          const averageFrameInterval = sampleElapsed / sampleFrameCount;
+          const slowFrameRatio = sampleSlowFrameCount / sampleFrameCount;
+          if (averageFrameInterval > 1000 / 60 + 0.5 || slowFrameRatio > 0.1) {
+            stablePerformanceSamples = 0;
+            adjustFragmentCount(Math.max(4, fragments.length - 1));
+          } else if (averageFrameInterval <= 1000 / 60 && slowFrameRatio <= 0.05) {
+            stablePerformanceSamples += 1;
+            if (stablePerformanceSamples >= 3) {
+              stablePerformanceSamples = 0;
+              adjustFragmentCount(Math.min(maximumFragmentCount(), fragments.length + 1));
+            }
+          } else {
+            stablePerformanceSamples = 0;
+          }
+          sampleElapsed = 0;
+          sampleFrameCount = 0;
+          sampleSlowFrameCount = 0;
+        }
       }
+      lastFrameTime = time;
+      draw(time);
       animationFrame = requestAnimationFrame(animate);
     }
 
@@ -495,7 +526,11 @@ export default function AmbientCode() {
         animationFrame = 0;
       } else if (!animationFrame) {
         lastTime = 0;
-        lastDraw = 0;
+        lastFrameTime = 0;
+        sampleElapsed = 0;
+        sampleFrameCount = 0;
+        sampleSlowFrameCount = 0;
+        stablePerformanceSamples = 0;
         animationFrame = requestAnimationFrame(animate);
       }
     }
