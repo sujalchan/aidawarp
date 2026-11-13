@@ -1,0 +1,80 @@
+.runtime-view {
+  display: flex;
+  min-width: 0;
+  min-height: 0;
+  flex: 1;
+  flex-direction: column;
+}
+
+.runtime-back {
+  display: inline-flex;
+  min-height: 34px;
+  flex: 0 0 auto;
+  align-items: center;
+  align-self: flex-start;
+  gap: 9px;
+  margin: 0 0 4px;
+  padding: 0 11px;
+  border: 1px solid rgba(210, 215, 223, 0.2);
+  border-radius: 7px;
+  background: rgba(17, 17, 17, 0.62);
+  color: var(--bright);
+  cursor: pointer;
+  font-size: 11px;
+  font-weight: 650;
+  letter-spacing: 0.05em;
+  transition: border-color 140ms ease, background-color 140ms ease;
+}
+
+.runtime-back:hover,
+.runtime-back:focus-visible {
+  border-color: rgba(210, 215, 223, 0.48);
+  background: rgba(40, 40, 40, 0.9);
+  outline: none;
+}
+
+.runtime-back span {
+  font-size: 17px;
+  line-height: 1;
+}
+
+.runtime-stage-wrap {
+  display: grid;
+  min-width: 0;
+  min-height: 0;
+  flex: 1;
+  place-items: center;
+  container-type: size;
+}
+
+.runtime-stage {
+  display: block;
+  width: min(100cqw, 133.333cqh);
+  height: auto;
+  aspect-ratio: 4 / 3;
+  background: #fff;
+  image-rendering: pixelated;
+}
+
+.runtime-project-info {
+  align-self: center;
+  flex: 0 0 auto;
+  padding: 5px 0 2px;
+  text-align: left;
+}
+
+.runtime-project-info h1 {
+  margin: 0;
+  color: var(--bright);
+  font-size: 17px;
+  font-weight: 650;
+  letter-spacing: 0.02em;
+  overflow-wrap: anywhere;
+}
+
+.runtime-project-info p {
+  margin: 3px 0 0;
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 500;
+}

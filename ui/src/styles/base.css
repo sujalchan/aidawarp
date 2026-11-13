@@ -79,6 +79,11 @@ html.macos-window .ambient-background {
   inset: 0;
   width: 100%;
   height: 100%;
+  transition: opacity 450ms ease;
+}
+
+.ambient-background.runtime-mode .ambient-code {
+  opacity: 0;
 }
 
 .crt-overlay {

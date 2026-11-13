@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import AmbientCode from "./components/AmbientCode.jsx";
 import ProjectPicker from "./components/ProjectPicker.jsx";
+import ProjectRuntime from "./components/ProjectRuntime.jsx";
 import RecentProjects from "./components/RecentProjects.jsx";
 import Wordmark from "./components/Wordmark.jsx";
 import WindowControls from "./components/WindowControls.jsx";
@@ -11,6 +12,7 @@ import {
   saveRecentProjectCreators,
   saveRecentProjectNames,
   saveRecentProjects,
+  projectName,
 } from "./utils/projectStorage.js";
 import {
   getCachedScratchProjectId,
@@ -30,6 +32,7 @@ export default function App() {
   const downloadBarTimer = useRef(null);
   const [scratchLink, setScratchLink] = useState("");
   const [backgroundEffectsEnabled, setBackgroundEffectsEnabled] = useState(true);
+  const [launchedProject, setLaunchedProject] = useState(null);
 
   // Persist creator names separately so Scratch API data does not affect project titles.
   useEffect(() => {
@@ -65,6 +68,14 @@ export default function App() {
     }
     rememberProjectCreator(path, projectCreator);
     setStatusMessage("");
+  }
+
+  function launchProject(path) {
+    openProject(path);
+    setLaunchedProject({
+      path,
+      title: recentProjectNames[path] || projectName(path),
+    });
   }
 
   async function removeRecentProject(path) {
@@ -222,46 +233,56 @@ export default function App() {
 
   return (
     <>
-      <AmbientCode enabled={backgroundEffectsEnabled} />
+      <AmbientCode
+        enabled={backgroundEffectsEnabled}
+        runtimeMode={Boolean(launchedProject)}
+      />
       <main className="launcher-frame">
         <div className="window-titlebar" data-tauri-drag-region>
           <WindowControls />
         </div>
-        <div className="launcher-layout">
-          <div className="launcher-primary">
-            <header className="launcher-header">
-              <div className="brand-lockup">
-                <Wordmark />
-                <div className="launcher-subtitle">SCRATCH TO RUST CONVERTER</div>
-              </div>
-            </header>
+        {launchedProject ? (
+          <ProjectRuntime
+            title={launchedProject.title}
+            creator={recentProjectCreators[launchedProject.path]}
+            onBack={() => setLaunchedProject(null)}
+          />
+        ) : (
+          <div className="launcher-layout">
+            <div className="launcher-primary">
+              <header className="launcher-header">
+                <div className="brand-lockup">
+                  <Wordmark />
+                  <div className="launcher-subtitle">SCRATCH TO RUST CONVERTER</div>
+                </div>
+              </header>
 
-            <ProjectPicker
-              chooseProject={chooseProject}
-              isChoosingProject={isChoosingProject}
-              isDownloadingProject={isDownloadingProject}
-              isReloadingProject={isReloadingProject}
-              isFinishingDownload={isFinishingDownload}
-              downloadProgress={downloadProgress}
-              scratchLink={scratchLink}
-              onScratchLinkChange={setScratchLink}
-              onLoadScratchLink={loadScratchLink}
-              statusMessage={statusMessage}
+              <ProjectPicker
+                chooseProject={chooseProject}
+                isChoosingProject={isChoosingProject}
+                isDownloadingProject={isDownloadingProject}
+                isReloadingProject={isReloadingProject}
+                isFinishingDownload={isFinishingDownload}
+                downloadProgress={downloadProgress}
+                scratchLink={scratchLink}
+                onScratchLinkChange={setScratchLink}
+                onLoadScratchLink={loadScratchLink}
+                statusMessage={statusMessage}
+              />
+            </div>
+
+            <RecentProjects
+              projects={recentProjects}
+              projectNames={recentProjectNames}
+              projectCreators={recentProjectCreators}
+              onOpen={launchProject}
+              onReload={reloadRecentProject}
+              onRemove={removeRecentProject}
+              onCreatorResolved={rememberProjectCreator}
+              isBusy={isChoosingProject}
             />
           </div>
-
-          <RecentProjects
-            projects={recentProjects}
-            projectNames={recentProjectNames}
-            projectCreators={recentProjectCreators}
-            onOpen={openProject}
-            onReload={reloadRecentProject}
-            onRemove={removeRecentProject}
-            onCreatorResolved={rememberProjectCreator}
-            isBusy={isChoosingProject}
-          />
-        </div>
-
+        )}
         <footer className="launcher-footer">
           <span>STATIC TALENT GROUP</span>
           <div className="background-effects-control">

@@ -1,11 +1,28 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { rustCodeBlocks } from '../data/rustCodeBlocks.js';
 
-export default function AmbientCode({ enabled = true }) {
+export default function AmbientCode({ enabled = true, runtimeMode = false }) {
   const canvasRef = useRef(null);
+  const [codeVisible, setCodeVisible] = useState(true);
+  const codeActive = enabled && codeVisible;
 
   useEffect(() => {
-    if (!enabled) return;
+    if (!runtimeMode) {
+      setCodeVisible(true);
+      return;
+    }
+    if (!enabled) {
+      setCodeVisible(false);
+      return;
+    }
+
+    setCodeVisible(true);
+    const fadeTimer = window.setTimeout(() => setCodeVisible(false), 450);
+    return () => window.clearTimeout(fadeTimer);
+  }, [enabled, runtimeMode]);
+
+  useEffect(() => {
+    if (!codeActive) return;
 
     const canvas = canvasRef.current;
     const context = canvas?.getContext("2d");
@@ -570,18 +587,21 @@ export default function AmbientCode({ enabled = true }) {
       window.removeEventListener("pointerleave", handlePointerLeave);
       cancelAnimationFrame(animationFrame);
     };
-  }, [enabled]);
+  }, [codeActive]);
 
   return (
-    <div className="ambient-background" aria-hidden="true">
-      {enabled && (
+    <div
+      className={`ambient-background${runtimeMode ? " runtime-mode" : ""}`}
+      aria-hidden="true"
+    >
+      {codeActive && <canvas ref={canvasRef} className="ambient-code" />}
+      {enabled && !runtimeMode && (
         <>
-          <canvas ref={canvasRef} className="ambient-code" />
           <div className="edge-blur edge-blur-top" />
           <div className="edge-blur edge-blur-bottom" />
-          <div className="crt-overlay" />
         </>
       )}
+      {(enabled || runtimeMode) && <div className="crt-overlay" />}
     </div>
   );
 }
