@@ -1,5 +1,6 @@
 use serde::Deserialize;
-use serde_json::Value;
+
+use crate::parser::ScratchValue;
 
 /// A Scratch variable's initial value and optional cloud-variable flag.
 #[derive(Debug, Deserialize)]
@@ -7,8 +8,8 @@ use serde_json::Value;
 pub struct ParsedVariable {
     /// The variable's name as shown in Scratch.
     pub name: String,
-    /// The initial value, kept as JSON because Scratch values can be numbers or strings.
-    pub initial_value: Value,
+    /// The initial value as a typed Scratch scalar: a string, number, or boolean.
+    pub initial_value: ScratchValue,
     /// Whether Scratch synchronizes this variable as a cloud variable.
     pub is_cloud: bool,
 }
@@ -17,8 +18,8 @@ pub struct ParsedVariable {
 #[serde(untagged)]
 // Scratch stores variables as [name, value] or [name, value, isCloud].
 enum VariableEntry {
-    Regular(String, Value),
-    Cloud(String, Value, bool),
+    Regular(String, ScratchValue),
+    Cloud(String, ScratchValue, bool),
 }
 
 impl From<VariableEntry> for ParsedVariable {

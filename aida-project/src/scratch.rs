@@ -194,7 +194,10 @@ fn asset_filename(asset: &ScratchAsset) -> Result<String, String> {
             let data_format = asset.data_format.as_deref().ok_or_else(|| {
                 "Scratch project contains an asset without a data format".to_string()
             })?;
-            format!("{asset_id}.{data_format}")
+            let mut filename = asset_id.to_owned();
+            filename.push('.');
+            filename.push_str(data_format);
+            filename
         }
     };
 

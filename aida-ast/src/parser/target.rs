@@ -3,7 +3,7 @@ use std::collections::HashMap;
 use serde::Deserialize;
 use serde_json::Value;
 
-use crate::parser::ParsedVariable;
+use crate::parser::{ParsedList, ParsedVariable};
 
 /// A Scratch stage or sprite and the code and data attached to that target.
 #[derive(Debug, Deserialize)]
@@ -18,6 +18,10 @@ pub struct ParsedTarget {
     /// Variables keyed by Scratch's internal variable IDs.
     #[serde(default)]
     pub variables: HashMap<String, ParsedVariable>,
+
+    /// Lists keyed by Scratch's internal list IDs.
+    #[serde(default)]
+    pub lists: HashMap<String, ParsedList>,
 
     /// Broadcast IDs mapped to their visible names.
     #[serde(default)]
